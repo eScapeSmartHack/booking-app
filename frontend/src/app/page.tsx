@@ -1,8 +1,11 @@
+'use client';
+
 import Link from 'next/link';
 import { Box, Container, Typography, Card, CardContent, Button, Stack } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ApiIcon from '@mui/icons-material/Api';
 import EventSeatIcon from '@mui/icons-material/EventSeat';
+import FaceIcon from '@mui/icons-material/Face';
 
 export default function Home() {
   return (
@@ -27,12 +30,12 @@ export default function Home() {
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 4 }}>
           <Card elevation={3} sx={{ height: '100%' }}>
             <CardContent sx={{ p: 4 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <ApiIcon color="primary" fontSize="large" />
-                <Typography variant="h4" fontWeight="semibold">
+                <Typography variant="h5" fontWeight="semibold">
                   Backend (FastAPI)
                 </Typography>
               </Box>
@@ -54,7 +57,7 @@ export default function Home() {
             <CardContent sx={{ p: 4 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <EventSeatIcon color="primary" fontSize="large" />
-                <Typography variant="h4" fontWeight="semibold">
+                <Typography variant="h5" fontWeight="semibold">
                   Desk Booking
                 </Typography>
               </Box>
@@ -69,6 +72,29 @@ export default function Home() {
                 size="large"
               >
                 Go to Booking
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card elevation={3} sx={{ height: '100%', bgcolor: 'primary.lighter', border: 1, borderColor: 'primary.light' }}>
+            <CardContent sx={{ p: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <FaceIcon color="primary" fontSize="large" />
+                <Typography variant="h5" fontWeight="semibold">
+                  Avatar Builder
+                </Typography>
+              </Box>
+              <Typography variant="body1" paragraph>
+                Create your custom avatar
+              </Typography>
+              <Button
+                variant="contained"
+                component={Link}
+                href="/avatar-builder"
+                endIcon={<ArrowForwardIcon />}
+                size="large"
+              >
+                Create Avatar
               </Button>
             </CardContent>
           </Card>
