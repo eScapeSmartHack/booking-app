@@ -6,6 +6,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ApiIcon from '@mui/icons-material/Api';
 import EventSeatIcon from '@mui/icons-material/EventSeat';
 import FaceIcon from '@mui/icons-material/Face';
+import HomeIcon from '@mui/icons-material/Home';
 
 export default function Home() {
   return (
@@ -95,6 +96,32 @@ export default function Home() {
                 size="large"
               >
                 Create Avatar
+              </Button>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box sx={{ mt: 6, textAlign: 'center' }}>
+          <Card elevation={3} sx={{ maxWidth: 400, mx: 'auto' }}>
+            <CardContent sx={{ p: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, justifyContent: 'center' }}>
+                <HomeIcon color="primary" fontSize="large" />
+                <Typography variant="h5" fontWeight="semibold">
+                  User Home
+                </Typography>
+              </Box>
+              <Typography variant="body1" paragraph>
+                Access your personalized dashboard
+              </Typography>
+              <Button
+                variant="contained"
+                component={Link}
+                href="/home"
+                endIcon={<ArrowForwardIcon />}
+                size="large"
+                fullWidth
+              >
+                Go to Home
               </Button>
             </CardContent>
           </Card>
