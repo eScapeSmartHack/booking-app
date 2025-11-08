@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from typing import List
-from pydantic import BaseModel
 from typing import List, Dict, Any
+from pydantic import BaseModel
 from datetime import datetime, timedelta
 from app.services.database_service import db_service
 from app.models.models import Booking
@@ -375,4 +374,3 @@ async def get_user_bookings_by_date(id_user: int, date: str):
         },
         "bookings": user_bookings_today
     }
-    
