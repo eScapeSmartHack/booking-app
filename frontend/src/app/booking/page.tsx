@@ -230,7 +230,7 @@ export default function BookingPage() {
               color: '#1a1a1a'
             }}
           >
-            Book a Desk
+            Floorplan
           </Typography>
           <Typography 
             variant="body2" 
@@ -250,7 +250,7 @@ export default function BookingPage() {
           gridTemplateColumns: { 
             xs: '1fr',
             sm: 'auto 1fr auto',
-            md: 'auto 1fr auto auto auto'
+            md: 'auto 1fr auto auto'
           },
           gap: 2,
           alignItems: 'center',
@@ -303,27 +303,6 @@ export default function BookingPage() {
                 Drop-Ins, Bucharest
               </Typography>
             </Box>
-          </Box>
-
-          {/* Stats Cards - Compact */}
-          <Box 
-            sx={{ 
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              px: 2.5,
-              py: 1.5,
-              bgcolor: '#f0fdf4',
-              borderRadius: 2,
-              border: '1px solid #bbf7d0',
-            }}
-          >
-            <Typography variant="h5" fontWeight="700" sx={{ color: '#166534', fontSize: '1.875rem' }}>
-              {availableDesks}
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#4b5563', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.688rem' }}>
-              Available
-            </Typography>
           </Box>
           
           <Box 
