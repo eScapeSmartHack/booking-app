@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class Room(BaseModel):
     id: int
@@ -8,6 +9,11 @@ class Room(BaseModel):
 class Booking(BaseModel):
     id_room: int
     id_user: int
+    date: str  # Format: YYYY-MM-DD
+    start: str  # Ora de început (ex: "09:00")
+    end: str    # Ora de sfârșit (ex: "17:00")
+
+class UpdateBooking(BaseModel):
     date: str  # Format: YYYY-MM-DD
     start: str  # Ora de început (ex: "09:00")
     end: str    # Ora de sfârșit (ex: "17:00")

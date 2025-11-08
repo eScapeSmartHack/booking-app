@@ -256,7 +256,7 @@ export default function HomePage() {
     <Box sx={{ p: 4, bgcolor: '#FFFFFF' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#1e40af' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#000000' }}>
           Upcoming Bookings
         </Typography>
         <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>

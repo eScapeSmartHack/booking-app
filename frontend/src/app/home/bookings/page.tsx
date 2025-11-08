@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -11,7 +11,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Button,
   IconButton,
   Select,
@@ -19,10 +18,19 @@ import {
   FormControl,
   InputLabel,
   Link,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Alert,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
 import { useRouter } from 'next/navigation';
+import { apiService } from '@/services/api';
 
 interface Booking {
   id: string;
@@ -33,44 +41,228 @@ interface Booking {
   location: string;
   group: string;
   bookedFor?: string;
+  id_room?: number;
+  date?: string;
+  start?: string;
+  end?: string;
 }
 
 export default function YourBookingsPage() {
   const router = useRouter();
-  const [workspaceType, setWorkspaceType] = useState('Desk');
+  const [workspaceType, setWorkspaceType] = useState<string>('All');
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
+  const [editError, setEditError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  // Sample data - in a real app, this would come from an API
-  const [bookings] = useState<Booking[]>([
-    {
-      id: '1',
-      workspace: '317-04',
-      type: 'Desk',
-      from: '10/11/2023 PM',
-      to: '10/11/2023 PM',
-      location: 'Woodward (IRC), Floor 3',
-      group: 'Faculty of Medicine',
-      bookedFor: '',
-    },
-  ]);
+  useEffect(() => {
+    loadBookings();
+  }, []);
 
-  const handleViewOnFloorPlan = (bookingId: string) => {
-    router.push('/booking');
+  useEffect(() => {
+    filterBookings();
+  }, [workspaceType, bookings]);
+
+  const loadBookings = async () => {
+    try {
+      setLoading(true);
+      // Get logged-in user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        console.error('User not found in localStorage');
+        setBookings([]);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      if (!user || !user.id) {
+        console.error('Invalid user data');
+        setBookings([]);
+        return;
+      }
+
+      // Get user bookings from backend (next 2 weeks)
+      const userBookingsResponse = await apiService.getUserBookings(user.id);
+      const roomsResponse = await apiService.getRooms();
+
+      // Transform bookings to match table format
+      const transformedBookings: Booking[] = userBookingsResponse.bookings.map((booking: any) => {
+        const room = roomsResponse.rooms.find((r: any) => r.id === booking.id_room);
+        const roomData = room ? JSON.parse(room.data) : null;
+        
+        // Format date and time
+        const dateObj = new Date(`${booking.date}T${booking.start}:00`);
+        const endDateObj = new Date(`${booking.date}T${booking.end}:00`);
+        
+        const formattedDate = dateObj.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
+        const formattedTime = dateObj.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+        const formattedEndTime = endDateObj.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+
+        // Determine type display
+        let typeDisplay = 'Desk';
+        if (roomData?.type === 'meeting-room') {
+          typeDisplay = 'Meeting Room';
+        } else if (roomData?.type === 'recreational') {
+          typeDisplay = 'Recreational';
+        }
+
+        return {
+          id: booking.id.toString(),
+          workspace: roomData?.name || `Room ${booking.id_room}`,
+          type: typeDisplay,
+          from: `${formattedDate} ${formattedTime}`,
+          to: `${formattedDate} ${formattedEndTime}`,
+          location: '6L Iuliu Maniu Blvd, Floor 4',
+          group: '-',
+          bookedFor: userBookingsResponse.user_name || '-',
+          id_room: booking.id_room,
+          date: booking.date,
+          start: booking.start,
+          end: booking.end,
+        };
+      });
+
+      // Sort by date (earliest first)
+      transformedBookings.sort((a, b) => {
+        if (!a.date || !b.date) return 0;
+        return a.date.localeCompare(b.date);
+      });
+
+      setBookings(transformedBookings);
+    } catch (error) {
+      console.error('Failed to load bookings:', error);
+      setBookings([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEdit = (bookingId: string) => {
-    // Handle edit action
-    console.log('Edit booking:', bookingId);
+  const filterBookings = () => {
+    if (workspaceType === 'All') {
+      setFilteredBookings(bookings);
+    } else {
+      const filtered = bookings.filter((booking) => {
+        if (workspaceType === 'Desk') {
+          return booking.type === 'Desk';
+        } else if (workspaceType === 'Meeting Room') {
+          return booking.type === 'Meeting Room';
+        } else if (workspaceType === 'recreational') {
+          return booking.type === 'Recreational';
+        }
+        return true;
+      });
+      setFilteredBookings(filtered);
+    }
   };
 
-  const handleDelete = (bookingId: string) => {
-    // Handle delete action
-    console.log('Delete booking:', bookingId);
+  const handleViewOnFloorPlan = (booking: Booking) => {
+    if (booking.date) {
+      router.push(`/booking?date=${booking.date}`);
+    } else {
+      router.push('/booking');
+    }
+  };
+
+  const handleEdit = (booking: Booking) => {
+    setEditingBooking(booking);
+    setEditDate(booking.date || '');
+    setEditStartTime(booking.start || '');
+    setEditEndTime(booking.end || '');
+    setEditError('');
+    setEditDialogOpen(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditingBooking(null);
+    setEditDate('');
+    setEditStartTime('');
+    setEditEndTime('');
+    setEditError('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingBooking) return;
+
+    // Validate inputs
+    if (!editDate || !editStartTime || !editEndTime) {
+      setEditError('Please fill in all fields');
+      return;
+    }
+
+    // Validate time format
+    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(editStartTime) || !timeRegex.test(editEndTime)) {
+      setEditError('Invalid time format. Use HH:MM (24-hour format)');
+      return;
+    }
+
+    // Validate that end time is after start time
+    const startMinutes = parseInt(editStartTime.split(':')[0]) * 60 + parseInt(editStartTime.split(':')[1]);
+    const endMinutes = parseInt(editEndTime.split(':')[0]) * 60 + parseInt(editEndTime.split(':')[1]);
+    if (endMinutes <= startMinutes) {
+      setEditError('End time must be after start time');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setEditError('');
+
+      await apiService.updateBooking(parseInt(editingBooking.id), {
+        date: editDate,
+        start: editStartTime,
+        end: editEndTime,
+      });
+
+      // Reload bookings after update
+      await loadBookings();
+      handleCloseEditDialog();
+    } catch (error: any) {
+      console.error('Failed to update booking:', error);
+      setEditError(error.message || 'Failed to update booking. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (bookingId: string) => {
+    if (!confirm('Are you sure you want to delete this booking?')) {
+      return;
+    }
+
+    try {
+      await apiService.deleteBooking(parseInt(bookingId));
+      // Reload bookings after deletion
+      await loadBookings();
+    } catch (error) {
+      console.error('Failed to delete booking:', error);
+      alert('Failed to delete booking. Please try again.');
+    }
   };
 
   return (
     <Box sx={{ p: 4, bgcolor: '#ffffff', minHeight: '100vh' }}>
       <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
-        Your bookings
+        Manage bookings
       </Typography>
 
       {/* Booked spaces section */}
@@ -88,24 +280,12 @@ export default function YourBookingsPage() {
               label="Workspace type"
               onChange={(e) => setWorkspaceType(e.target.value)}
             >
+              <MenuItem value="All">All</MenuItem>
               <MenuItem value="Desk">Desk</MenuItem>
               <MenuItem value="Meeting Room">Meeting Room</MenuItem>
               <MenuItem value="recreational">Recreational</MenuItem>
             </Select>
           </FormControl>
-          <Button
-            variant="contained"
-            sx={{
-              bgcolor: '#2563eb',
-              color: '#fff',
-              px: 3,
-              '&:hover': {
-                bgcolor: '#1e40af',
-              },
-            }}
-          >
-            Apply
-          </Button>
         </Box>
 
         {/* Table */}
@@ -124,8 +304,14 @@ export default function YourBookingsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {bookings.length > 0 ? (
-                bookings.map((booking) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : filteredBookings.length > 0 ? (
+                filteredBookings.map((booking) => (
                   <TableRow key={booking.id} sx={{ '&:hover': { bgcolor: '#f9fafb' } }}>
                     <TableCell>{booking.workspace}</TableCell>
                     <TableCell>{booking.type}</TableCell>
@@ -138,7 +324,7 @@ export default function YourBookingsPage() {
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                         <Link
                           component="button"
-                          onClick={() => handleViewOnFloorPlan(booking.id)}
+                          onClick={() => handleViewOnFloorPlan(booking)}
                           sx={{
                             color: '#2563eb',
                             textDecoration: 'none',
@@ -153,7 +339,7 @@ export default function YourBookingsPage() {
                         </Link>
                         <IconButton
                           size="small"
-                          onClick={() => handleEdit(booking.id)}
+                          onClick={() => handleEdit(booking)}
                           sx={{ color: '#666' }}
                         >
                           <EditIcon fontSize="small" />
@@ -181,15 +367,96 @@ export default function YourBookingsPage() {
         </TableContainer>
       </Paper>
 
-      {/* Team days section */}
-      <Paper elevation={0} sx={{ p: 3, bgcolor: '#ffffff', border: '1px solid #e0e0e0', borderRadius: 2 }}>
-        <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
-          Team days
-        </Typography>
-        <Typography variant="body2" sx={{ color: '#666' }}>
-          You don't have any team days yet! Create one with Condeco mobile.
-        </Typography>
-      </Paper>
+      {/* Edit Booking Dialog */}
+      <Dialog open={editDialogOpen} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Edit Booking</Typography>
+            <IconButton onClick={handleCloseEditDialog} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {editingBooking && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2, color: '#666' }}>
+                Workspace: <strong>{editingBooking.workspace}</strong> ({editingBooking.type})
+              </Typography>
+              
+              {editError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {editError}
+                </Alert>
+              )}
+
+              <TextField
+                fullWidth
+                label="Date"
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                sx={{ mb: 2 }}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                inputProps={{
+                  min: new Date().toISOString().split('T')[0],
+                  max: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                }}
+              />
+
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Start Time"
+                  type="time"
+                  value={editStartTime}
+                  onChange={(e) => setEditStartTime(e.target.value)}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  inputProps={{
+                    step: 300, // 5 minutes
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="End Time"
+                  type="time"
+                  value={editEndTime}
+                  onChange={(e) => setEditEndTime(e.target.value)}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  inputProps={{
+                    step: 300, // 5 minutes
+                  }}
+                />
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEditDialog} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveEdit}
+            variant="contained"
+            disabled={saving}
+            sx={{
+              bgcolor: '#2563eb',
+              '&:hover': {
+                bgcolor: '#1e40af',
+              },
+            }}
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Desk, DeskStatus } from '@/types/desk';
 import FloorPlanMap from '@/components/FloorPlanMap';
 import BookingModal from '@/components/BookingModal';
@@ -18,13 +19,22 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import { apiService } from '@/services/api';
 
 
-export default function BookingPage() {
+function BookingPageContent() {
+  const searchParams = useSearchParams();
   const [desks, setDesks] = useState<Desk[]>([]);
   const [selectedDesk, setSelectedDesk] = useState<Desk | null>(null);
   const [selectedDeskForModal, setSelectedDeskForModal] = useState<Desk | null>(null);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [pendingDeskToAdd, setPendingDeskToAdd] = useState<Omit<Desk, 'id' | 'position'> | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => {
+    // Check if date is provided in URL query params
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const dateParam = urlParams.get('date');
+      if (dateParam) {
+        return dateParam;
+      }
+    }
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
@@ -33,6 +43,18 @@ export default function BookingPage() {
     standing: false,
     window: false,
   });
+
+  // Check for date parameter in URL on mount and when searchParams change
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      // Validate date format (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (dateRegex.test(dateParam)) {
+        setSelectedDate(dateParam);
+      }
+    }
+  }, [searchParams]);
 
   // Keyboard shortcut for admin mode (Ctrl+Shift+M)
   useEffect(() => {
@@ -431,5 +453,13 @@ export default function BookingPage() {
         </Box>
       )}
     </Box>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={<Box sx={{ p: 4 }}>Loading...</Box>}>
+      <BookingPageContent />
+    </Suspense>
   );
 }

@@ -19,6 +19,7 @@ import {
   InputLabel,
   Grid,
   Paper,
+  Avatar,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EventIcon from '@mui/icons-material/Event';
@@ -142,9 +143,34 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
   return (
     <Dialog open={!!desk} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h5" fontWeight="bold">
-          {desk.name}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {desk.bookedBy && desk.bookedByAvatar && (
+            <Avatar
+              sx={{
+                width: 56,
+                height: 56,
+                bgcolor: 'transparent',
+                border: '2px solid #bfdbfe',
+                '& img': {
+                  width: '100%',
+                  height: '100%',
+                },
+                '& svg': {
+                  width: '100%',
+                  height: '100%',
+                },
+              }}
+            >
+              <Box
+                dangerouslySetInnerHTML={{ __html: desk.bookedByAvatar }}
+                sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              />
+            </Avatar>
+          )}
+          <Typography variant="h5" fontWeight="bold">
+            {desk.name}
+          </Typography>
+        </Box>
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
         </IconButton>

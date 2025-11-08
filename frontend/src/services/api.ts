@@ -205,6 +205,35 @@ class ApiService {
   }
 
   /**
+   * PUT /bookings/booking/{booking_id}
+   * Update a booking by ID
+   */
+  async updateBooking(bookingId: number, booking: { date: string; start: string; end: string }): Promise<{ message: string; booking: any }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; booking: any }>(
+      `${API_BASE_URL}/bookings/booking/${bookingId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(booking),
+      }
+    );
+    return response;
+  }
+
+  /**
+   * DELETE /bookings/booking/{booking_id}
+   * Delete a booking by ID
+   */
+  async deleteBooking(bookingId: number): Promise<{ message: string; booking: any }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; booking: any }>(
+      `${API_BASE_URL}/bookings/booking/${bookingId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+    return response;
+  }
+
+  /**
    * GET /users
    * Get all users from backend
    */
