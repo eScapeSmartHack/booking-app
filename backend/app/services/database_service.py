@@ -75,11 +75,6 @@ class DatabaseService:
         user = await prisma.user.find_many()
         
         return user
-    async def get_user_by_id(self, user_id: int) -> Optional[User]:
-        users = await prisma.user.find_unique(
-            where={'id': user_id}
-        )
-        return users
     
     async def get_user_by_id(self, user_id: int) -> Optional[User]:
         user = await prisma.user.find_unique(
