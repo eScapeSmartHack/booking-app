@@ -140,6 +140,9 @@ export default function AvatarBuilder() {
     // Also save the SVG for immediate use
     localStorage.setItem('userAvatarSvg', avatarSvg);
     
+    // Dispatch custom event to notify other components (like navbar) that avatar was updated
+    window.dispatchEvent(new Event('avatarUpdated'));
+    
     setSaveSuccess(true);
   };
 
@@ -172,14 +175,14 @@ export default function AvatarBuilder() {
   };
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', height: 'calc(100vh - 64px)', bgcolor: '#FFFFFF', p: 4 }}>
       {/* Left Sidebar */}
-      <Box sx={{ width: 320, bgcolor: 'background.paper', borderRight: 1, borderColor: 'divider', p: 3, overflowY: 'auto' }}>
+      <Box sx={{ width: 320, bgcolor: '#FFFFFF', borderRight: '1px solid #bfdbfe', p: 3, overflowY: 'auto', borderRadius: 2, mr: 3, maxHeight: '100%' }}>
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#1e40af' }}>
             Avatar Builder
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>
             Customize your personal avatar
           </Typography>
         </Box>
@@ -192,36 +195,69 @@ export default function AvatarBuilder() {
             onClick={randomizeAvatar}
             fullWidth
             size="large"
+            sx={{
+              bgcolor: '#1e40af',
+              color: '#FFFFFF',
+              '&:hover': {
+                bgcolor: '#1e3a8a',
+              },
+            }}
           >
             Randomize
           </Button>
           <Button
             variant="contained"
-            color="success"
             startIcon={<SaveIcon />}
             onClick={saveAvatar}
             fullWidth
             size="large"
+            sx={{
+              bgcolor: '#1e40af',
+              color: '#FFFFFF',
+              '&:hover': {
+                bgcolor: '#1e3a8a',
+              },
+            }}
           >
             Save Avatar
           </Button>
         </Box>
 
-        <Divider sx={{ my: 3 }} />
+        <Divider sx={{ my: 3, borderColor: '#bfdbfe' }} />
 
-        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#1e40af' }}>
           Quick Info
         </Typography>
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mb: 2,
+            bgcolor: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            color: '#000000',
+            '& .MuiAlert-icon': {
+              color: '#1e40af',
+            },
+          }}
+        >
           Your avatar is automatically saved when you click Save. You can customize it anytime!
         </Alert>
       </Box>
 
       {/* Main Content - Avatar Preview */}
-      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
-        <Card sx={{ maxWidth: 500, width: '100%' }}>
+      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Card 
+          elevation={0}
+          sx={{ 
+            maxWidth: 500, 
+            width: '100%',
+            bgcolor: '#FFFFFF',
+            border: '1px solid #bfdbfe',
+            borderRadius: 3,
+          }}
+        >
           <CardContent sx={{ p: 4 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom textAlign="center">
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, textAlign: 'center', color: '#1e40af' }}>
               Preview
             </Typography>
             <Box
@@ -229,10 +265,11 @@ export default function AvatarBuilder() {
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                bgcolor: 'background.default',
+                bgcolor: '#eff6ff',
                 borderRadius: 2,
                 p: 4,
                 minHeight: 300,
+                border: '1px solid #bfdbfe',
               }}
             >
               <Box
@@ -245,17 +282,21 @@ export default function AvatarBuilder() {
       </Box>
 
       {/* Right Sidebar - Custom Features */}
-      <Box sx={{ width: 320, bgcolor: 'background.paper', borderLeft: 1, borderColor: 'divider', p: 3, overflowY: 'auto' }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Customize Features
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Control individual avatar elements
-        </Typography>
+      <Box sx={{ width: 320, bgcolor: '#FFFFFF', borderLeft: '1px solid #bfdbfe', p: 3, overflowY: 'auto', borderRadius: 2, ml: 3, maxHeight: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ mb: 3, flexShrink: 0 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#1e40af' }}>
+            Customize Features
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>
+            Control individual avatar elements
+          </Typography>
+        </Box>
+        
+        <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
 
         {/* Skin Color */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#000000' }}>
             Skin Tone
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -268,8 +309,12 @@ export default function AvatarBuilder() {
                       height: 40,
                       bgcolor: `#${color}`,
                       border: skinColor === color ? 3 : 1,
-                      borderColor: skinColor === color ? 'primary.main' : 'divider',
-                      '&:hover': { bgcolor: `#${color}`, transform: 'scale(1.1)' },
+                      borderColor: skinColor === color ? '#1e40af' : '#bfdbfe',
+                      '&:hover': { 
+                        bgcolor: `#${color}`, 
+                        transform: 'scale(1.1)',
+                        borderColor: '#1e40af',
+                      },
                     }}
                   />
                 ))}
@@ -278,8 +323,23 @@ export default function AvatarBuilder() {
 
             {/* Hair Style */}
             <FormControl fullWidth sx={{ mb: 3 }} size="small">
-              <InputLabel>Hair Style</InputLabel>
-              <Select value={top} label="Hair Style" onChange={(e) => setTop(e.target.value)}>
+              <InputLabel sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>Hair Style</InputLabel>
+              <Select 
+                value={top} 
+                label="Hair Style" 
+                onChange={(e) => setTop(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bfdbfe',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                }}
+              >
                 {avataaarsOptions.top.map((option) => (
                   <MenuItem key={option} value={option}>
                     {formatLabel(option)}
@@ -290,7 +350,7 @@ export default function AvatarBuilder() {
 
             {/* Hair Color */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#000000' }}>
                 Hair Color
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -303,8 +363,12 @@ export default function AvatarBuilder() {
                       height: 32,
                       bgcolor: `#${color}`,
                       border: hairColor === color ? 3 : 1,
-                      borderColor: hairColor === color ? 'primary.main' : 'divider',
-                      '&:hover': { bgcolor: `#${color}`, transform: 'scale(1.1)' },
+                      borderColor: hairColor === color ? '#1e40af' : '#bfdbfe',
+                      '&:hover': { 
+                        bgcolor: `#${color}`, 
+                        transform: 'scale(1.1)',
+                        borderColor: '#1e40af',
+                      },
                     }}
                   />
                 ))}
@@ -313,8 +377,23 @@ export default function AvatarBuilder() {
 
             {/* Eyes */}
             <FormControl fullWidth sx={{ mb: 3 }} size="small">
-              <InputLabel>Eyes</InputLabel>
-              <Select value={eyes} label="Eyes" onChange={(e) => setEyes(e.target.value)}>
+              <InputLabel sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>Eyes</InputLabel>
+              <Select 
+                value={eyes} 
+                label="Eyes" 
+                onChange={(e) => setEyes(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bfdbfe',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                }}
+              >
                 {avataaarsOptions.eyes.map((option) => (
                   <MenuItem key={option} value={option}>
                     {formatLabel(option)}
@@ -325,8 +404,23 @@ export default function AvatarBuilder() {
 
             {/* Eyebrows */}
             <FormControl fullWidth sx={{ mb: 3 }} size="small">
-              <InputLabel>Eyebrows</InputLabel>
-              <Select value={eyebrows} label="Eyebrows" onChange={(e) => setEyebrows(e.target.value)}>
+              <InputLabel sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>Eyebrows</InputLabel>
+              <Select 
+                value={eyebrows} 
+                label="Eyebrows" 
+                onChange={(e) => setEyebrows(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bfdbfe',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                }}
+              >
                 {avataaarsOptions.eyebrows.map((option) => (
                   <MenuItem key={option} value={option}>
                     {formatLabel(option)}
@@ -337,8 +431,23 @@ export default function AvatarBuilder() {
 
             {/* Mouth */}
             <FormControl fullWidth sx={{ mb: 3 }} size="small">
-              <InputLabel>Mouth</InputLabel>
-              <Select value={mouth} label="Mouth" onChange={(e) => setMouth(e.target.value)}>
+              <InputLabel sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>Mouth</InputLabel>
+              <Select 
+                value={mouth} 
+                label="Mouth" 
+                onChange={(e) => setMouth(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bfdbfe',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                }}
+              >
                 {avataaarsOptions.mouth.map((option) => (
                   <MenuItem key={option} value={option}>
                     {formatLabel(option)}
@@ -349,8 +458,23 @@ export default function AvatarBuilder() {
 
             {/* Accessories */}
             <FormControl fullWidth sx={{ mb: 3 }} size="small">
-              <InputLabel>Accessories</InputLabel>
-              <Select value={accessories} label="Accessories" onChange={(e) => setAccessories(e.target.value)}>
+              <InputLabel sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>Accessories</InputLabel>
+              <Select 
+                value={accessories} 
+                label="Accessories" 
+                onChange={(e) => setAccessories(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bfdbfe',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                }}
+              >
                 {avataaarsOptions.accessories.map((option) => (
                   <MenuItem key={option} value={option}>
                     {formatLabel(option)}
@@ -361,7 +485,7 @@ export default function AvatarBuilder() {
 
             {/* Accessories Color */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#000000' }}>
                 Accessories Color
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -374,8 +498,12 @@ export default function AvatarBuilder() {
                       height: 32,
                       bgcolor: `#${color}`,
                       border: accessoriesColor === color ? 3 : 1,
-                      borderColor: accessoriesColor === color ? 'primary.main' : 'divider',
-                      '&:hover': { bgcolor: `#${color}`, transform: 'scale(1.1)' },
+                      borderColor: accessoriesColor === color ? '#1e40af' : '#bfdbfe',
+                      '&:hover': { 
+                        bgcolor: `#${color}`, 
+                        transform: 'scale(1.1)',
+                        borderColor: '#1e40af',
+                      },
                     }}
                   />
                 ))}
@@ -384,8 +512,23 @@ export default function AvatarBuilder() {
 
             {/* Facial Hair */}
             <FormControl fullWidth sx={{ mb: 3 }} size="small">
-              <InputLabel>Facial Hair</InputLabel>
-              <Select value={facialHair} label="Facial Hair" onChange={(e) => setFacialHair(e.target.value)}>
+              <InputLabel sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>Facial Hair</InputLabel>
+              <Select 
+                value={facialHair} 
+                label="Facial Hair" 
+                onChange={(e) => setFacialHair(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bfdbfe',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                }}
+              >
                 {avataaarsOptions.facialHair.map((option) => (
                   <MenuItem key={option} value={option}>
                     {formatLabel(option)}
@@ -396,7 +539,7 @@ export default function AvatarBuilder() {
 
             {/* Facial Hair Color */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#000000' }}>
                 Facial Hair Color
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -409,8 +552,12 @@ export default function AvatarBuilder() {
                       height: 32,
                       bgcolor: `#${color}`,
                       border: facialHairColor === color ? 3 : 1,
-                      borderColor: facialHairColor === color ? 'primary.main' : 'divider',
-                      '&:hover': { bgcolor: `#${color}`, transform: 'scale(1.1)' },
+                      borderColor: facialHairColor === color ? '#1e40af' : '#bfdbfe',
+                      '&:hover': { 
+                        bgcolor: `#${color}`, 
+                        transform: 'scale(1.1)',
+                        borderColor: '#1e40af',
+                      },
                     }}
                   />
                 ))}
@@ -419,8 +566,23 @@ export default function AvatarBuilder() {
 
             {/* Clothing */}
             <FormControl fullWidth sx={{ mb: 3 }} size="small">
-              <InputLabel>Clothing</InputLabel>
-              <Select value={clothing} label="Clothing" onChange={(e) => setClothing(e.target.value)}>
+              <InputLabel sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>Clothing</InputLabel>
+              <Select 
+                value={clothing} 
+                label="Clothing" 
+                onChange={(e) => setClothing(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bfdbfe',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#1e40af',
+                  },
+                }}
+              >
                 {avataaarsOptions.clothing.map((option) => (
                   <MenuItem key={option} value={option}>
                     {formatLabel(option)}
@@ -431,7 +593,7 @@ export default function AvatarBuilder() {
 
             {/* Clothing Color */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#000000' }}>
                 Clothing Color
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -444,31 +606,42 @@ export default function AvatarBuilder() {
                       height: 32,
                       bgcolor: `#${color}`,
                       border: clothesColor === color ? 3 : 1,
-                      borderColor: clothesColor === color ? 'primary.main' : 'divider',
-                      '&:hover': { bgcolor: `#${color}`, transform: 'scale(1.1)' },
+                      borderColor: clothesColor === color ? '#1e40af' : '#bfdbfe',
+                      '&:hover': { 
+                        bgcolor: `#${color}`, 
+                        transform: 'scale(1.1)',
+                        borderColor: '#1e40af',
+                      },
                     }}
                   />
                 ))}
               </Box>
             </Box>
         </Box>
+      </Box>
 
-        {/* Save Success Snackbar */}
-        <Snackbar
-          open={saveSuccess}
-          autoHideDuration={3000}
-          onClose={() => setSaveSuccess(false)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      {/* Save Success Snackbar */}
+      <Snackbar
+        open={saveSuccess}
+        autoHideDuration={3000}
+        onClose={() => setSaveSuccess(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSaveSuccess(false)} 
+          severity="success" 
+          variant="filled"
+          icon={<CheckCircleIcon />}
+          sx={{
+            bgcolor: '#1e40af',
+            '& .MuiAlert-icon': {
+              color: '#FFFFFF',
+            },
+          }}
         >
-          <Alert 
-            onClose={() => setSaveSuccess(false)} 
-            severity="success" 
-            variant="filled"
-            icon={<CheckCircleIcon />}
-          >
-            Avatar saved successfully!
-          </Alert>
-        </Snackbar>
-      </Box>	
-    );
-  }
+          Avatar saved successfully!
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+}

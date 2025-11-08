@@ -15,6 +15,8 @@ import {
   ListItemIcon,
   ListItemText,
   Avatar,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import PersonIcon from '@mui/icons-material/Person';
@@ -22,6 +24,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import MapIcon from '@mui/icons-material/Map';
+import SettingsIcon from '@mui/icons-material/Settings';
+import EditIcon from '@mui/icons-material/Edit';
 
 const DRAWER_WIDTH = 290;
 
@@ -35,15 +39,57 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [avatarSvg, setAvatarSvg] = useState<string | null>(null);
   const [personalSpacesOpen, setPersonalSpacesOpen] = useState(
     pathname?.includes('/home/bookings') || 
     pathname === '/home' || 
     pathname === '/booking' ||
     pathname?.includes('/home/booking-grid')
   );
+  const [userSettingsOpen, setUserSettingsOpen] = useState(
+    pathname === '/avatar-builder'
+  );
+
+  const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
 
   useEffect(() => {
     setMounted(true);
+    // Load saved avatar from localStorage
+    const savedAvatar = localStorage.getItem('userAvatarSvg');
+    if (savedAvatar) {
+      setAvatarSvg(savedAvatar);
+    }
+    
+    // Listen for storage changes to update avatar when saved
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'userAvatarSvg' && e.newValue) {
+        setAvatarSvg(e.newValue);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom event from avatar builder page
+    const handleAvatarUpdate = () => {
+      const savedAvatar = localStorage.getItem('userAvatarSvg');
+      if (savedAvatar) {
+        setAvatarSvg(savedAvatar);
+      }
+    };
+    window.addEventListener('avatarUpdated', handleAvatarUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('avatarUpdated', handleAvatarUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -60,6 +106,10 @@ export default function SideNavbar({ children }: SideNavbarProps) {
       pathname === '/home' || 
       pathname === '/booking' ||
       pathname?.includes('/home/booking-grid')
+    );
+    // Update user settings open state based on pathname
+    setUserSettingsOpen(
+      pathname === '/avatar-builder'
     );
   }, [pathname]);
 
@@ -81,6 +131,11 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     { id: 'Upcoming Bookings', label: 'Upcoming Bookings', path: '/home', icon: <CalendarTodayIcon /> },
     { id: 'Floorplan', label: 'Floorplan', path: '/booking', icon: <MapIcon /> },
     { id: 'Booking grid', label: 'Booking grid', path: '/home/booking-grid', icon: <ViewListIcon /> },
+  ];
+
+  const userSettingsSubmenu = [
+    { id: 'Edit avatar', label: 'Edit avatar', path: '/avatar-builder', icon: <EditIcon /> },
+    { id: 'General Settings', label: 'General Settings', path: null, icon: <SettingsIcon /> },
   ];
 
   const isSubItemSelected = (subItemPath: string) => {
@@ -132,8 +187,17 @@ export default function SideNavbar({ children }: SideNavbarProps) {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
+              <Typography variant="body2" sx={{ fontSize: '13px', color: '#1e40af', fontWeight: 500 }}>
+                {mounted ? formatTime(currentTime) : '--:--'}
+              </Typography>
+              <Typography variant="caption" sx={{ fontSize: '11px', color: 'rgba(30, 64, 175, 0.6)' }}>
+                {mounted ? formatDate(currentTime) : 'Loading...'}
+              </Typography>
+            </Box>
             <IconButton 
               size="small" 
+              onClick={handleAvatarClick}
               sx={{ 
                 color: '#1e40af',
                 transition: 'all 0.2s ease',
@@ -143,18 +207,88 @@ export default function SideNavbar({ children }: SideNavbarProps) {
                 }
               }}
             >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: '#1e40af', border: '2px solid #bfdbfe' }}>
-                <PersonIcon fontSize="small" sx={{ color: '#FFFFFF' }} />
+              <Avatar 
+                sx={{ 
+                  width: 32, 
+                  height: 32, 
+                  bgcolor: avatarSvg ? 'transparent' : '#1e40af', 
+                  border: '2px solid #bfdbfe',
+                  '& img': {
+                    width: '100%',
+                    height: '100%',
+                  },
+                }}
+              >
+                {avatarSvg ? (
+                  <Box
+                    dangerouslySetInnerHTML={{ __html: avatarSvg }}
+                    sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  />
+                ) : (
+                  <PersonIcon fontSize="small" sx={{ color: '#FFFFFF' }} />
+                )}
               </Avatar>
             </IconButton>
-            <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
-              <Typography variant="body2" sx={{ fontSize: '13px', color: '#1e40af', fontWeight: 500 }}>
-                {mounted ? formatTime(currentTime) : '--:--'}
-              </Typography>
-              <Typography variant="caption" sx={{ fontSize: '11px', color: 'rgba(30, 64, 175, 0.6)' }}>
-                {mounted ? formatDate(currentTime) : 'Loading...'}
-              </Typography>
-            </Box>
+            <Menu
+              anchorEl={anchorEl}
+              open={open}
+              onClose={handleMenuClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              PaperProps={{
+                sx: {
+                  mt: 1.5,
+                  minWidth: 200,
+                  borderRadius: 2,
+                  border: '1px solid #bfdbfe',
+                  boxShadow: '0 4px 12px rgba(30, 64, 175, 0.15)',
+                },
+              }}
+            >
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  router.push('/avatar-builder');
+                }}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    bgcolor: 'rgba(191, 219, 254, 0.1)',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: '#1e40af' }}>
+                  <EditIcon fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body2" sx={{ color: '#000000', fontWeight: 500 }}>
+                  Edit avatar
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                onClick={handleMenuClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    bgcolor: 'rgba(191, 219, 254, 0.1)',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: '#1e40af' }}>
+                  <SettingsIcon fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body2" sx={{ color: '#000000', fontWeight: 500 }}>
+                  User settings
+                </Typography>
+              </MenuItem>
+            </Menu>
           </Box>
         </Toolbar>
       </AppBar>
@@ -209,7 +343,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
                 <PersonIcon />
               </ListItemIcon>
               <ListItemText
-                primary="Personal spaces"
+                primary="Bookings"
                 primaryTypographyProps={{
                   fontSize: '15px',
                   fontWeight: personalSpacesOpen ? 600 : 500,
@@ -288,6 +422,127 @@ export default function SideNavbar({ children }: SideNavbarProps) {
                         fontSize: '14px',
                         fontWeight: isSubItemSelected(subItem.path) ? 600 : 400,
                         color: isSubItemSelected(subItem.path) ? '#1e40af' : '#000000',
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          )}
+
+          {/* User Settings Main Item */}
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => setUserSettingsOpen(!userSettingsOpen)}
+              sx={{
+                py: 1.5,
+                px: 3,
+                mb: 1,
+                mx: 2,
+                borderRadius: '8px',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: 'rgba(191, 219, 254, 0.06)',
+                  '& .MuiListItemIcon-root': {
+                    color: '#1e40af',
+                  },
+                  '& .MuiTypography-root': {
+                    color: '#1e40af',
+                  },
+                },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 40,
+                  color: userSettingsOpen ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                  transition: 'color 0.2s ease',
+                }}
+              >
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary="User Settings"
+                primaryTypographyProps={{
+                  fontSize: '15px',
+                  fontWeight: userSettingsOpen ? 600 : 500,
+                  color: userSettingsOpen ? '#1e40af' : '#000000',
+                }}
+              />
+              <ExpandMoreIcon
+                sx={{
+                  fontSize: '20px',
+                  color: userSettingsOpen ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                  transform: userSettingsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'all 0.2s ease',
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+
+          {/* User Settings Submenu */}
+          {userSettingsOpen && (
+            <List sx={{ pl: 1, pr: 2 }}>
+              {userSettingsSubmenu.map((subItem) => (
+                <ListItem key={subItem.id} disablePadding>
+                  <ListItemButton
+                    selected={subItem.path ? isSubItemSelected(subItem.path) : false}
+                    onClick={() => {
+                      if (subItem.path) {
+                        router.push(subItem.path);
+                      }
+                    }}
+                    sx={{
+                      py: 1.25,
+                      px: 3,
+                      ml: 3,
+                      mr: 2,
+                      borderRadius: '8px',
+                      mb: 0.5,
+                      transition: 'all 0.2s ease',
+                      '&.Mui-selected': {
+                        bgcolor: '#eff6ff',
+                        borderLeft: '3px solid #1e40af',
+                        '&:hover': {
+                          bgcolor: '#eff6ff',
+                          transform: 'translateX(2px)',
+                        },
+                        '& .MuiListItemIcon-root': {
+                          color: '#1e40af',
+                        },
+                        '& .MuiTypography-root': {
+                          color: '#1e40af',
+                          fontWeight: 600,
+                        },
+                      },
+                      '&:hover': {
+                        bgcolor: 'rgba(191, 219, 254, 0.08)',
+                        transform: 'translateX(4px)',
+                        '& .MuiListItemIcon-root': {
+                          color: '#1e40af',
+                        },
+                        '& .MuiTypography-root': {
+                          color: '#1e40af',
+                          fontWeight: 500,
+                        },
+                      },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 36,
+                        color: subItem.path && isSubItemSelected(subItem.path) ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                        transition: 'color 0.2s ease',
+                      }}
+                    >
+                      {subItem.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={subItem.label}
+                      primaryTypographyProps={{
+                        fontSize: '14px',
+                        fontWeight: subItem.path && isSubItemSelected(subItem.path) ? 600 : 400,
+                        color: subItem.path && isSubItemSelected(subItem.path) ? '#1e40af' : '#000000',
                       }}
                     />
                   </ListItemButton>
