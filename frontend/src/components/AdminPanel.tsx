@@ -36,7 +36,7 @@ interface AdminPanelProps {
   isAdminMode: boolean;
   onToggleAdminMode: () => void;
   onAddDesk: (desk: Omit<Desk, 'id'>) => void;
-  onDeleteDesk: (deskId: string) => void;
+  onDeleteDesk: (deskId: number) => void;
   onExportDesks: () => void;
   onImportDesks: (desks: Desk[]) => void;
   selectedDesk: Desk | null;

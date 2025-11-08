@@ -24,7 +24,7 @@ export interface TimeSlot {
 }
 
 export interface Desk {
-  id: string;
+  id: number;
   name: string;
   position: DeskPosition;
   status?: DeskStatus;
@@ -40,7 +40,7 @@ export interface Desk {
 }
 
 export interface Booking {
-  deskId: string;
+  deskId: number;
   userName: string;
   date: string;
   startTime: string; // HH:mm format

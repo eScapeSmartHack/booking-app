@@ -1,7 +1,7 @@
 'use client';
 
 import { Desk } from '@/types/desk';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import DeskMarker from './DeskMarker';
 import { Box, IconButton, Paper, Alert } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -14,7 +14,7 @@ interface FloorPlanMapProps {
   onDeskClick: (desk: Desk) => void;
   onMapClick?: (x: number, y: number) => void;
   isAdminMode?: boolean;
-  onDeskMove?: (deskId: string, x: number, y: number) => void;
+  onDeskMove?: (deskId: number, x: number, y: number) => void;
   floorPlanImage: string;
 }
 
@@ -27,12 +27,36 @@ export default function FloorPlanMap({
   floorPlanImage,
 }: FloorPlanMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [draggedDeskId, setDraggedDeskId] = useState<string | null>(null);
+  const [draggedDeskId, setDraggedDeskId] = useState<number | null>(null);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+
+  // Track image dimensions when it loads
+  useEffect(() => {
+    const img = imageRef.current;
+    if (!img) return;
+
+    const updateDimensions = () => {
+      if (img.naturalWidth && img.naturalHeight) {
+        setImageDimensions({
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+        });
+      }
+    };
+
+    if (img.complete) {
+      updateDimensions();
+    } else {
+      img.addEventListener('load', updateDimensions);
+      return () => img.removeEventListener('load', updateDimensions);
+    }
+  }, [floorPlanImage]);
 
   const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Only handle clicks in admin mode and when not panning/dragging
@@ -44,16 +68,17 @@ export default function FloorPlanMap({
       return;
     }
 
-    // Get the scaled container's bounding rect
+    // Get the scaled container and image
     const scaledContainer = e.currentTarget.querySelector('[data-scaled-container]') as HTMLElement;
-    if (!scaledContainer) return;
+    const img = imageRef.current;
+    if (!scaledContainer || !img) return;
 
-    const containerRect = e.currentTarget.getBoundingClientRect();
     const scaledRect = scaledContainer.getBoundingClientRect();
+    const imgRect = img.getBoundingClientRect();
     
-    // Calculate position relative to the scaled container
-    const relativeX = (e.clientX - scaledRect.left) / scaledRect.width;
-    const relativeY = (e.clientY - scaledRect.top) / scaledRect.height;
+    // Calculate position relative to the actual image, not the container
+    const relativeX = (e.clientX - imgRect.left) / imgRect.width;
+    const relativeY = (e.clientY - imgRect.top) / imgRect.height;
     
     // Convert to percentage (0-100)
     const x = Math.max(0, Math.min(100, relativeX * 100));
@@ -77,13 +102,18 @@ export default function FloorPlanMap({
       const deltaY = e.clientY - panStart.y;
       setPan({ x: pan.x + deltaX, y: pan.y + deltaY });
       setPanStart({ x: e.clientX, y: e.clientY });
-    } else if (isDragging && draggedDeskId && onDeskMove && containerRef.current) {
+    } else if (isDragging && draggedDeskId && onDeskMove && imageRef.current) {
       e.preventDefault();
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left - pan.x) / scale / rect.width) * 100;
-      const y = ((e.clientY - rect.top - pan.y) / scale / rect.height) * 100;
+      const imgRect = imageRef.current.getBoundingClientRect();
       
-      onDeskMove(draggedDeskId, Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
+      // Calculate position relative to the actual image
+      const relativeX = (e.clientX - imgRect.left) / imgRect.width;
+      const relativeY = (e.clientY - imgRect.top) / imgRect.height;
+      
+      const x = Math.max(0, Math.min(100, relativeX * 100));
+      const y = Math.max(0, Math.min(100, relativeY * 100));
+      
+      onDeskMove(draggedDeskId, x, y);
     }
   };
 
@@ -202,40 +232,62 @@ export default function FloorPlanMap({
             transition: isDragging || isPanning ? 'none' : 'transform 0.1s ease-out',
           }}
         >
-          {/* Floor Plan Image */}
+          {/* Image and Markers Wrapper - ensures markers match image dimensions */}
           <Box
-            component="img"
-            src={floorPlanImage}
-            alt="Floor Plan"
             sx={{
+              position: 'relative',
+              display: 'inline-block',
               width: '100%',
-              height: 'auto',
-              userSelect: 'none',
-              display: 'block',
             }}
-            draggable={false}
-          />
+          >
+            {/* Floor Plan Image */}
+            <Box
+              component="img"
+              ref={imageRef}
+              src={floorPlanImage}
+              alt="Floor Plan"
+              sx={{
+                width: '100%',
+                height: 'auto',
+                userSelect: 'none',
+                display: 'block',
+              }}
+              draggable={false}
+            />
 
-          {/* Desk Markers */}
-          <Box sx={{ position: 'absolute', inset: 0 }}>
-            {desks.map((desk) => (
-              <Box
-                key={desk.id}
-                onMouseDown={(e) => handleDeskMouseDown(desk, e)}
-                sx={{ cursor: isAdminMode ? 'move' : 'pointer' }}
-              >
-                <DeskMarker
-                  desk={desk}
-                  onClick={(d) => {
-                    if (!isDragging && !isPanning) {
-                      onDeskClick(d);
-                    }
+            {/* Desk Markers - positioned relative to image, matching its exact dimensions */}
+            <Box 
+              sx={{ 
+                position: 'absolute', 
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            >
+              {desks.map((desk) => (
+                <Box
+                  key={desk.id}
+                  onMouseDown={(e) => handleDeskMouseDown(desk, e)}
+                  sx={{ 
+                    cursor: isAdminMode ? 'move' : 'pointer',
+                    pointerEvents: 'auto',
                   }}
-                  isAdminMode={isAdminMode}
-                  mapScale={scale}
-                />
-              </Box>
-            ))}
+                >
+                  <DeskMarker
+                    desk={desk}
+                    onClick={(d) => {
+                      if (!isDragging && !isPanning) {
+                        onDeskClick(d);
+                      }
+                    }}
+                    isAdminMode={isAdminMode}
+                    mapScale={scale}
+                  />
+                </Box>
+              ))}
+            </Box>
           </Box>
         </Box>
       </Box>

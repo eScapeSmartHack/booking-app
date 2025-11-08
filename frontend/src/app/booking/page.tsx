@@ -109,7 +109,7 @@ export default function BookingPage() {
 
     const newDesk: Desk = {
       ...pendingDeskToAdd,
-      id: `desk-${Date.now()}`,
+      id: Date.now(),
       position: { x, y },
     };
 
@@ -121,12 +121,12 @@ export default function BookingPage() {
     setPendingDeskToAdd(deskData);
   };
 
-  const handleDeleteDesk = (deskId: string) => {
+  const handleDeleteDesk = (deskId: number) => {
     setDesks(prev => prev.filter(d => d.id !== deskId));
     setSelectedDesk(null);
   };
 
-  const handleDeskMove = (deskId: string, x: number, y: number) => {
+  const handleDeskMove = (deskId: number, x: number, y: number) => {
     setDesks(prev =>
       prev.map(desk =>
         desk.id === deskId
@@ -136,7 +136,7 @@ export default function BookingPage() {
     );
   };
 
-  const handleBookDesk = (deskId: string, date: string, startTime?: string, endTime?: string, duration?: number, userName?: string, participants?: string[]) => {
+  const handleBookDesk = (deskId: number, date: string, startTime?: string, endTime?: string, duration?: number, userName?: string, participants?: string[]) => {
     setDesks(prev =>
       prev.map(desk => {
         if (desk.id !== deskId) return desk;
@@ -202,9 +202,18 @@ export default function BookingPage() {
   const myBookings = desks.filter(d => d.status === 'booked' && d.bookedBy === 'You').length;
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, height: { xs: 'auto', lg: '100vh' }, bgcolor: 'background.default' }}>
       {/* Left Sidebar */}
-      <Box sx={{ width: 320, bgcolor: 'background.paper', borderRight: 1, borderColor: 'divider', p: 3, overflowY: 'auto' }}>
+      <Box sx={{ 
+        width: { xs: '100%', lg: 320 }, 
+        bgcolor: 'background.paper', 
+        borderRight: { xs: 0, lg: 1 }, 
+        borderBottom: { xs: 1, lg: 0 },
+        borderColor: 'divider', 
+        p: { xs: 2, sm: 3 }, 
+        overflowY: 'auto',
+        maxHeight: { xs: '40vh', lg: '100vh' }
+      }}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             Book a Desk
@@ -317,7 +326,7 @@ export default function BookingPage() {
       </Box>
 
       {/* Main Content - Floor Plan */}
-      <Box sx={{ flex: 1, position: 'relative' }}>
+      <Box sx={{ flex: 1, position: 'relative', minHeight: { xs: '60vh', lg: '100vh' }, order: { xs: 2, lg: 1 } }}>
         <FloorPlanMap
           desks={desks}
           onDeskClick={handleDeskClick}
@@ -329,7 +338,15 @@ export default function BookingPage() {
       </Box>
 
       {/* Right Sidebar - Admin Panel */}
-      <Box sx={{ width: 320 }}>
+      <Box sx={{ 
+        width: { xs: '100%', lg: 320 },
+        order: { xs: 3, lg: 2 },
+        borderTop: { xs: 1, lg: 0 },
+        borderLeft: { xs: 0, lg: 1 },
+        borderColor: 'divider',
+        maxHeight: { xs: '40vh', lg: '100vh' },
+        overflowY: 'auto'
+      }}>
         <AdminPanel
           isAdminMode={isAdminMode}
           onToggleAdminMode={handleToggleAdminMode}

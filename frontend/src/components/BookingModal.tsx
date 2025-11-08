@@ -29,7 +29,7 @@ import { generateTimeSlots, getAvailableSlotsForDuration, formatDuration, isWeek
 interface BookingModalProps {
   desk: Desk | null;
   onClose: () => void;
-  onBook: (deskId: string, date: string, startTime?: string, endTime?: string, duration?: number, userName?: string, participants?: string[]) => void;
+  onBook: (deskId: number, date: string, startTime?: string, endTime?: string, duration?: number, userName?: string, participants?: string[]) => void;
 }
 
 const DURATION_OPTIONS: BookingDuration[] = [30, 60, 90, 120, 150, 180, 210, 240];
