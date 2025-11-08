@@ -1,9 +1,10 @@
 'use client';
 
 import { Desk } from '@/types/desk';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Box, Paper, Typography, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { generateTimeSlots, isWeekday } from '@/utils/timeUtils';
 
 interface DeskMarkerProps {
   desk: Desk;
@@ -13,14 +14,29 @@ interface DeskMarkerProps {
 }
 
 const MarkerCircle = styled(Box, {
-  shouldForwardProp: (prop) => prop !== 'status' && prop !== 'isHovered',
-})<{ status: string; isHovered: boolean }>(({ theme, status, isHovered }) => {
+  shouldForwardProp: (prop) => prop !== 'status' && prop !== 'isHovered' && prop !== 'spaceType',
+})<{ status: string; isHovered: boolean; spaceType: string }>(({ theme, status, isHovered, spaceType }) => {
   const getStatusColor = () => {
+    // If booked, always show red
+    if (status === 'booked') {
+      return theme.palette.error.main; // Red for booked
+    }
+    
+    // Check space type first when available
+    if (status === 'available') {
+      if (spaceType === 'meeting-room') {
+        return theme.palette.primary.main; // Blue #2563eb
+      }
+      if (spaceType === 'recreational') {
+        return theme.palette.info.light; // Light blue
+      }
+      if (spaceType === 'desk' || !spaceType) {
+        return theme.palette.success.main; // Green
+      }
+    }
+    
+    // Other statuses
     switch (status) {
-      case 'available':
-        return theme.palette.success.main;
-      case 'booked':
-        return theme.palette.primary.main;
       case 'colleague':
         return theme.palette.grey[400];
       case 'team-member':
@@ -34,6 +50,7 @@ const MarkerCircle = styled(Box, {
       case 'fixed-space':
         return theme.palette.error.main;
       default:
+        // Default fallback - should not reach here for available spaces
         return theme.palette.grey[500];
     }
   };
@@ -48,22 +65,24 @@ const MarkerCircle = styled(Box, {
     backgroundColor: getStatusColor(),
     color: '#fff',
     fontWeight: 600,
-    fontSize: '0.2rem',
-    lineHeight: 1,
+    fontSize: '4px',
+    lineHeight: 0,
     padding: 0,
     margin: 0,
     boxShadow: theme.shadows[2],
-    border: `0.5px solid white`,
+    border: `0.15px solid rgba(255, 255, 255, 0.4)`,
     transition: 'all 0.2s ease',
-    transform: isHovered ? 'scale(1.3)' : 'scale(1)',
+    transform: (isHovered && status !== 'booked') ? 'scale(1.3)' : 'scale(1)',
     cursor: 'pointer',
+    textAlign: 'center',
     '& > *': {
-      lineHeight: 1,
+      lineHeight: 0,
       margin: 0,
       padding: 0,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      textAlign: 'center',
     },
   };
 });
@@ -94,13 +113,57 @@ const PopupCard = styled(Paper, {
 
 export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScale = 1 }: DeskMarkerProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const spaceType = desk.type || 'desk';
+  const isMeetingRoom = spaceType === 'meeting-room';
+  const isRecreational = spaceType === 'recreational';
+  const isBooked = desk.status === 'booked';
+  const isEventSpace = isMeetingRoom || isRecreational;
+  
+  // Reset hover state when desk changes (e.g., after booking)
+  useEffect(() => {
+    setIsHovered(false);
+  }, [desk.id, desk.status, desk.bookedBy, desk.bookedDate, desk.bookedStartTime, desk.bookedEndTime, desk.bookings?.length]);
+  
+  // Get available time slots for meeting rooms and recreational spaces
+  const availableSlots = useMemo(() => {
+    if (!isEventSpace || desk.status !== 'available') return [];
+    
+    const today = new Date();
+    if (!isWeekday(today)) return [];
+    
+    const existingBookings = desk.bookings?.filter(b => {
+      const bookingDate = new Date(b.date);
+      return bookingDate.toDateString() === today.toDateString();
+    }) || [];
+    
+    if (desk.bookedDate && desk.bookedStartTime && desk.bookedEndTime) {
+      const bookedDate = new Date(desk.bookedDate);
+      if (bookedDate.toDateString() === today.toDateString()) {
+        existingBookings.push({
+          deskId: desk.id,
+          userName: desk.bookedBy || '',
+          date: desk.bookedDate,
+          startTime: desk.bookedStartTime,
+          endTime: desk.bookedEndTime,
+        });
+      }
+    }
+    
+    const slots = generateTimeSlots(today, existingBookings.map(b => ({
+      startTime: b.startTime,
+      endTime: b.endTime,
+    })));
+    
+    return slots.filter(s => s.isAvailable).slice(0, 3); // Show first 3 available slots
+  }, [desk]);
 
   const getStatusIcon = () => {
+    if (!desk.status) return 'dot';
     switch (desk.status) {
       case 'available':
-        return '●';
+        return 'dot';
       case 'booked':
-        return '●';
+        return 'dot';
       case 'colleague':
         return '😊';
       case 'team-member':
@@ -112,7 +175,7 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
       case 'fixed-space':
         return '📌';
       default:
-        return '●';
+        return 'dot';
     }
   };
 
@@ -123,7 +186,7 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
         position: 'absolute',
         transform: 'translate(-50%, -50%)',
         cursor: 'pointer',
-        zIndex: isHovered ? 1000 : 10,
+        zIndex: isHovered ? 1000 : (isMeetingRoom ? 5 : 10),
         left: `${desk.position.x}%`,
         top: `${desk.position.y}%`,
       }}
@@ -134,22 +197,38 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <MarkerCircle status={desk.status} isHovered={isHovered}>
-        <Box
-          component="span"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            lineHeight: 1,
-            margin: 0,
-            padding: 0,
-            width: '100%',
-            height: '100%',
-          }}
-        >
-          {getStatusIcon()}
-        </Box>
+      <MarkerCircle status={desk.status || 'available'} isHovered={isHovered} spaceType={spaceType}>
+        {getStatusIcon() === 'dot' ? (
+          <Box
+            sx={{
+              width: '1.5px',
+              height: '1.5px',
+              borderRadius: '80%',
+              backgroundColor: '#fff',
+              margin: 0,
+              padding: 0,
+            }}
+          />
+        ) : (
+          <Box
+            component="span"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: 0,
+              margin: 0,
+              padding: 0,
+              width: '100%',
+              height: '100%',
+              textAlign: 'center',
+              verticalAlign: 'middle',
+              fontSize: '4px',
+            }}
+          >
+            {getStatusIcon()}
+          </Box>
+        )}
       </MarkerCircle>
 
       {isHovered && (
@@ -162,9 +241,16 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
                 Floor: {desk.floor}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize', fontSize: '0.6rem' }}>
-                Status: {desk.status.replace('-', ' ')}
-              </Typography>
+              {desk.status && (
+                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize', fontSize: '0.6rem' }}>
+                  Status: {desk.status.replace('-', ' ')}
+                </Typography>
+              )}
+              {isEventSpace && desk.capacity && (
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                  Capacity: {desk.capacity} people
+                </Typography>
+              )}
               {desk.bookedBy && (
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
                   Booked by: {desk.bookedBy}
@@ -182,6 +268,25 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
                       sx={{ height: 16, fontSize: '0.55rem', '& .MuiChip-label': { px: 0.75 } }}
                     />
                   ))}
+                </Box>
+              )}
+              {isEventSpace && availableSlots.length > 0 && (
+                <Box sx={{ mt: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.55rem', fontWeight: 'bold' }}>
+                    Available today:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.25, mt: 0.25 }}>
+                    {availableSlots.map((slot, idx) => (
+                      <Chip
+                        key={idx}
+                        label={`${slot.start}-${slot.end}`}
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                        sx={{ height: 14, fontSize: '0.5rem', '& .MuiChip-label': { px: 0.5 } }}
+                      />
+                    ))}
+                  </Box>
                 </Box>
               )}
             </Box>

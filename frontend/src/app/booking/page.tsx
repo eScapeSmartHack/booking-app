@@ -47,7 +47,31 @@ export default function BookingPage() {
     const savedDesks = localStorage.getItem('desk-layout');
     if (savedDesks) {
       try {
-        setDesks(JSON.parse(savedDesks));
+        const parsed: Desk[] = JSON.parse(savedDesks);
+        // Merge with INITIAL_DESKS to ensure meeting rooms and recreational spaces have proper type
+        const merged = parsed.map(savedDesk => {
+          const initialDesk = INITIAL_DESKS.find(d => d.id === savedDesk.id);
+          // Preserve booking information but restore type and capacity from INITIAL_DESKS
+          // Also check by name if ID doesn't match (for meeting rooms/recreational added manually)
+          const initialDeskByName = !initialDesk && savedDesk.name 
+            ? INITIAL_DESKS.find(d => d.name === savedDesk.name && (d.type === 'meeting-room' || d.type === 'recreational'))
+            : null;
+          
+          const matchingInitialDesk = initialDesk || initialDeskByName;
+          
+          return {
+            ...savedDesk,
+            type: matchingInitialDesk?.type || savedDesk.type || 'desk',
+            capacity: matchingInitialDesk?.capacity || savedDesk.capacity,
+          };
+        });
+        
+        // Add any missing desks from INITIAL_DESKS (e.g., new meeting rooms)
+        const missingDesks = INITIAL_DESKS.filter(initialDesk => 
+          !merged.find(d => d.id === initialDesk.id)
+        );
+        
+        setDesks([...merged, ...missingDesks]);
       } catch (error) {
         console.error('Failed to load saved desks:', error);
         setDesks(INITIAL_DESKS);
@@ -59,7 +83,16 @@ export default function BookingPage() {
 
   useEffect(() => {
     if (desks.length > 0) {
-      localStorage.setItem('desk-layout', JSON.stringify(desks));
+      // Ensure all desks have proper type before saving
+      const desksWithTypes = desks.map(desk => {
+        const initialDesk = INITIAL_DESKS.find(d => d.id === desk.id);
+        return {
+          ...desk,
+          type: initialDesk?.type || desk.type || 'desk',
+          capacity: initialDesk?.capacity || desk.capacity,
+        };
+      });
+      localStorage.setItem('desk-layout', JSON.stringify(desksWithTypes));
     }
   }, [desks]);
 
@@ -103,18 +136,44 @@ export default function BookingPage() {
     );
   };
 
-  const handleBookDesk = (deskId: string, date: string) => {
+  const handleBookDesk = (deskId: string, date: string, startTime?: string, endTime?: string, duration?: number, userName?: string, participants?: string[]) => {
     setDesks(prev =>
-      prev.map(desk =>
-        desk.id === deskId
-          ? {
-              ...desk,
-              status: 'booked' as DeskStatus,
-              bookedBy: 'You',
-              bookedDate: date,
-            }
-          : desk
-      )
+      prev.map(desk => {
+        if (desk.id !== deskId) return desk;
+        
+        const isEventSpace = desk.type === 'meeting-room' || desk.type === 'recreational';
+        const existingBookings = desk.bookings || [];
+        
+        if (isEventSpace && startTime && endTime) {
+          // Add new booking to event spaces (meeting room or recreational) array
+          const newBooking = {
+            deskId,
+            userName: userName || 'You',
+            date,
+            startTime,
+            endTime,
+            duration,
+            participants: participants || [],
+          };
+          
+          return {
+            ...desk,
+            bookings: [...existingBookings, newBooking],
+            // Update status if fully booked
+            status: 'available' as DeskStatus, // Keep available, but show bookings
+          };
+        } else {
+          // Desk: book for whole day
+          return {
+            ...desk,
+            status: 'booked' as DeskStatus,
+            bookedBy: userName || 'You',
+            bookedDate: date,
+            bookedStartTime: '09:00',
+            bookedEndTime: '18:00',
+          };
+        }
+      })
     );
   };
 

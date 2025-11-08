@@ -26,7 +26,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 const avataaarsOptions = {
   skinColor: ['ffdbb4', 'edb98a', 'd08b5b', 'ae5d29', '614335'],
   hairColor: ['000000', '4a312c', '8d5524', 'b58143', 'c93305', 'e16381', 'f59797', 'ecdcbf'],
-  eyes: ['close', 'cry', 'default', 'eyeRoll', 'happy', 'hearts', 'side', 'squint', 'surprised', 'wink', 'winkWacky', 'xDizzy'],
+  eyes: ['closed', 'cry', 'default', 'eyeRoll', 'happy', 'hearts', 'side', 'squint', 'surprised', 'wink', 'winkWacky', 'xDizzy'],
   eyebrows: ['angry', 'angryNatural', 'default', 'defaultNatural', 'flatNatural', 'raisedExcited', 'raisedExcitedNatural', 'sadConcerned', 'sadConcernedNatural', 'unibrowNatural', 'upDown', 'upDownNatural'],
   mouth: ['concerned', 'default', 'disbelief', 'eating', 'grimace', 'sad', 'screamOpen', 'serious', 'smile', 'tongue', 'twinkle', 'vomit'],
   // Verified working hair/top values

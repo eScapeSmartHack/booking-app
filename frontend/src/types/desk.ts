@@ -8,27 +8,43 @@ export type DeskStatus =
   | 'hidden' 
   | 'fixed-space';
 
+export type SpaceType = 'desk' | 'meeting-room' | 'recreational';
+
+export type BookingDuration = 30 | 60 | 90 | 120 | 150 | 180 | 210 | 240; // minutes
+
 export interface DeskPosition {
   x: number; // percentage from left (0-100)
   y: number; // percentage from top (0-100)
+}
+
+export interface TimeSlot {
+  start: string; // HH:mm format
+  end: string; // HH:mm format
+  isAvailable: boolean;
 }
 
 export interface Desk {
   id: string;
   name: string;
   position: DeskPosition;
-  status: DeskStatus;
+  status?: DeskStatus;
   floor: string;
+  type?: SpaceType; // Optional, defaults to 'desk'
   attributes?: string[];
   bookedBy?: string;
   bookedDate?: string;
+  bookedStartTime?: string; // HH:mm format
+  bookedEndTime?: string; // HH:mm format
+  bookings?: Booking[]; // For meeting rooms with multiple time slots
+  capacity?: number; // Capacity for meeting rooms (number of people)
 }
 
-export interface DeskBooking {
+export interface Booking {
   deskId: string;
   userName: string;
   date: string;
-  startTime?: string;
-  endTime?: string;
+  startTime: string; // HH:mm format
+  endTime: string; // HH:mm format
+  duration?: number; // minutes
+  participants?: string[]; // List of participant names for meeting rooms and recreational spaces
 }
-

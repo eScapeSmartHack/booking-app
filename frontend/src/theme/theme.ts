@@ -1,5 +1,3 @@
-'use client';
-
 import { createTheme } from '@mui/material/styles';
 
 export const theme = createTheme({
@@ -22,6 +20,8 @@ export const theme = createTheme({
     },
     info: {
       main: '#3b82f6',
+      light: '#60a5fa', // Light blue for recreational spaces
+      dark: '#2563eb',
     },
     success: {
       main: '#10b981',

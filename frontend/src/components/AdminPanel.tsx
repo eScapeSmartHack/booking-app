@@ -1,6 +1,6 @@
 'use client';
 
-import { Desk, DeskStatus } from '@/types/desk';
+import { Desk, DeskStatus, SpaceType } from '@/types/desk';
 import { useState } from 'react';
 import {
   Box,
@@ -54,6 +54,7 @@ export default function AdminPanel({
   const [newDeskName, setNewDeskName] = useState('');
   const [newDeskStatus, setNewDeskStatus] = useState<DeskStatus>('available');
   const [newDeskFloor, setNewDeskFloor] = useState('4');
+  const [newDeskType, setNewDeskType] = useState<SpaceType>('desk');
   const [newDeskAttributes, setNewDeskAttributes] = useState('');
   const [showImportModal, setShowImportModal] = useState(false);
   const [importText, setImportText] = useState('');
@@ -71,6 +72,7 @@ export default function AdminPanel({
       position: { x: 50, y: 50 },
       status: newDeskStatus,
       floor: newDeskFloor,
+      type: newDeskType,
       attributes: attributes.length > 0 ? attributes : undefined,
     });
 
@@ -141,6 +143,19 @@ export default function AdminPanel({
                 size="small"
                 fullWidth
               />
+
+              <FormControl size="small" fullWidth>
+                <InputLabel>Type</InputLabel>
+                <Select
+                  value={newDeskType}
+                  label="Type"
+                  onChange={(e) => setNewDeskType(e.target.value as SpaceType)}
+                >
+                  <MenuItem value="desk">Desk</MenuItem>
+                  <MenuItem value="meeting-room">Meeting Room</MenuItem>
+                  <MenuItem value="recreational">Recreational</MenuItem>
+                </Select>
+              </FormControl>
 
               <FormControl size="small" fullWidth>
                 <InputLabel>Status</InputLabel>

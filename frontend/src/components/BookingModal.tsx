@@ -1,7 +1,7 @@
 'use client';
 
-import { Desk } from '@/types/desk';
-import { useState } from 'react';
+import { Desk, BookingDuration } from '@/types/desk';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -13,16 +13,26 @@ import {
   Typography,
   Chip,
   IconButton,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Grid,
+  Paper,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EventIcon from '@mui/icons-material/Event';
 import PersonIcon from '@mui/icons-material/Person';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { generateTimeSlots, getAvailableSlotsForDuration, formatDuration, isWeekday } from '@/utils/timeUtils';
 
 interface BookingModalProps {
   desk: Desk | null;
   onClose: () => void;
-  onBook: (deskId: string, date: string) => void;
+  onBook: (deskId: string, date: string, startTime?: string, endTime?: string, duration?: number, userName?: string, participants?: string[]) => void;
 }
+
+const DURATION_OPTIONS: BookingDuration[] = [30, 60, 90, 120, 150, 180, 210, 240];
 
 export default function BookingModal({ desk, onClose, onBook }: BookingModalProps) {
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -30,15 +40,68 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
     return today.toISOString().split('T')[0];
   });
   const [userName, setUserName] = useState('');
+  const [participants, setParticipants] = useState(''); // Comma-separated list
+  const [selectedDuration, setSelectedDuration] = useState<BookingDuration>(60);
+  const [selectedStartTime, setSelectedStartTime] = useState<string>('');
 
   if (!desk) return null;
 
+  const isMeetingRoom = desk.type === 'meeting-room';
+  const isRecreational = desk.type === 'recreational';
+  const isEventSpace = isMeetingRoom || isRecreational;
+  const isDesk = desk.type === 'desk' || !desk.type;
+
+  // Get existing bookings for the selected date
+  const existingBookings = desk.bookings?.filter(b => b.date === selectedDate) || [];
+  if (desk.bookedDate === selectedDate && desk.bookedStartTime && desk.bookedEndTime) {
+    existingBookings.push({
+      deskId: desk.id,
+      userName: desk.bookedBy || '',
+      date: selectedDate,
+      startTime: desk.bookedStartTime,
+      endTime: desk.bookedEndTime,
+    });
+  }
+
+  // Generate time slots for the selected date
+  const dateObj = new Date(selectedDate);
+  const allTimeSlots = useMemo(() => {
+    return generateTimeSlots(dateObj, existingBookings.map(b => ({
+      startTime: b.startTime,
+      endTime: b.endTime,
+    })));
+  }, [selectedDate, existingBookings]);
+
+  // Get available slots for selected duration (meeting rooms only)
+  const availableSlots = useMemo(() => {
+    if (isDesk) return [];
+    return getAvailableSlotsForDuration(allTimeSlots, selectedDuration);
+  }, [allTimeSlots, selectedDuration, isDesk]);
+
   const handleBook = () => {
-    if (desk.status === 'available' && userName.trim()) {
-      onBook(desk.id, selectedDate);
+    if ((!desk.status || desk.status === 'available') && userName.trim()) {
+      // Parse participants (comma-separated list, trimmed)
+      const participantsList = participants
+        .split(',')
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+      
+      if (isDesk) {
+        // Desk: book for whole day (9:00 - 18:00)
+        onBook(desk.id, selectedDate, '09:00', '18:00', 540, userName);
+      } else if (isEventSpace) {
+        // Meeting room or Recreational: book for selected duration with participants
+        if (!selectedStartTime) return;
+        const startMinutes = parseInt(selectedStartTime.split(':')[0]) * 60 + parseInt(selectedStartTime.split(':')[1]);
+        const endMinutes = startMinutes + selectedDuration;
+        const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+        onBook(desk.id, selectedDate, selectedStartTime, endTime, selectedDuration, userName, participantsList);
+      }
       onClose();
     }
   };
+
+  const isDateValid = isWeekday(dateObj);
 
   return (
     <Dialog open={!!desk} onClose={onClose} maxWidth="sm" fullWidth>
@@ -53,8 +116,19 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
 
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          {/* Desk Details */}
+          {/* Space Details */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Type:
+              </Typography>
+              <Chip
+                label={isMeetingRoom ? 'Meeting Room' : 'Desk'}
+                size="small"
+                color={isMeetingRoom ? 'primary' : 'default'}
+              />
+            </Box>
+
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="body2" color="text.secondary">
                 Floor:
@@ -64,17 +138,19 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
               </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                Status:
-              </Typography>
-              <Chip
-                label={desk.status.replace('-', ' ')}
-                size="small"
-                color={desk.status === 'available' ? 'success' : 'error'}
-                sx={{ textTransform: 'capitalize' }}
-              />
-            </Box>
+            {desk.status && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Status:
+                </Typography>
+                <Chip
+                  label={desk.status.replace('-', ' ')}
+                  size="small"
+                  color={desk.status === 'available' ? 'success' : 'error'}
+                  sx={{ textTransform: 'capitalize' }}
+                />
+              </Box>
+            )}
 
             {desk.attributes && desk.attributes.length > 0 && (
               <Box>
@@ -108,7 +184,7 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
           </Box>
 
           {/* Booking Form (only if available) */}
-          {desk.status === 'available' && (
+          {(!desk.status || desk.status === 'available') && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
               <TextField
                 label="Your Name"
@@ -120,25 +196,104 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
                   startAdornment: <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />,
                 }}
               />
+              
+              {isEventSpace && (
+                <TextField
+                  label="Participants (comma-separated)"
+                  value={participants}
+                  onChange={(e) => setParticipants(e.target.value)}
+                  placeholder="e.g., John Doe, Jane Smith, Bob Johnson"
+                  helperText="Enter names of participants separated by commas"
+                  fullWidth
+                  InputProps={{
+                    startAdornment: <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                />
+              )}
+              
               <TextField
                 label="Select Date"
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setSelectedStartTime('');
+                }}
                 inputProps={{ min: new Date().toISOString().split('T')[0] }}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 InputProps={{
                   startAdornment: <EventIcon sx={{ mr: 1, color: 'text.secondary' }} />,
                 }}
+                error={!isDateValid}
+                helperText={!isDateValid ? 'Only weekdays (Mon-Fri) are available' : ''}
               />
+
+              {isMeetingRoom && (
+                <>
+                  <FormControl fullWidth>
+                    <InputLabel>Duration</InputLabel>
+                    <Select
+                      value={selectedDuration}
+                      label="Duration"
+                      onChange={(e) => {
+                        setSelectedDuration(e.target.value as BookingDuration);
+                        setSelectedStartTime('');
+                      }}
+                    >
+                      {DURATION_OPTIONS.map(duration => (
+                        <MenuItem key={duration} value={duration}>
+                          {formatDuration(duration)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {availableSlots.length > 0 ? (
+                    <Box>
+                      <Typography variant="body2" color="text.secondary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <AccessTimeIcon fontSize="small" />
+                        Available Time Slots:
+                      </Typography>
+                      <Box sx={{ mt: 1, maxHeight: 200, overflowY: 'auto', display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 1 }}>
+                        {availableSlots.map((slot, idx) => (
+                          <Button
+                            key={idx}
+                            variant={selectedStartTime === slot.start ? 'contained' : 'outlined'}
+                            size="small"
+                            onClick={() => setSelectedStartTime(slot.start)}
+                            fullWidth
+                            sx={{ fontSize: '0.75rem' }}
+                          >
+                            {slot.start} - {slot.end}
+                          </Button>
+                        ))}
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Paper elevation={0} sx={{ p: 2, bgcolor: 'warning.lighter', border: 1, borderColor: 'warning.light' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No available time slots for {formatDuration(selectedDuration)} on this date.
+                      </Typography>
+                    </Paper>
+                  )}
+                </>
+              )}
+
+              {isDesk && (
+                <Paper elevation={0} sx={{ p: 2, bgcolor: 'info.lighter', border: 1, borderColor: 'info.light' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Desks are booked for the entire day (9:00 - 18:00).
+                  </Typography>
+                </Paper>
+              )}
             </Box>
           )}
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        {desk.status === 'available' ? (
+        {(!desk.status || desk.status === 'available') ? (
           <>
             <Button onClick={onClose} color="inherit">
               Cancel
@@ -146,9 +301,9 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
             <Button
               onClick={handleBook}
               variant="contained"
-              disabled={!userName.trim()}
+              disabled={!userName.trim() || !isDateValid || (isMeetingRoom && !selectedStartTime)}
             >
-              Book Desk
+              {isMeetingRoom ? 'Book Room' : 'Book Desk'}
             </Button>
           </>
         ) : (
