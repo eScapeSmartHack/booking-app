@@ -14,7 +14,7 @@ async def populate_rooms():
     
     try:
         # Citim JSON-ul
-        json_path = Path("/home/luca/SmartHack/desk-layout (9) (2).json")
+        json_path = Path("map_layout.json")
         
         if not json_path.exists():
             print(f"❌ Fișierul {json_path} nu a fost găsit!")

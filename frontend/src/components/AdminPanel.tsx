@@ -40,6 +40,7 @@ interface AdminPanelProps {
   onExportDesks: () => void;
   onImportDesks: (desks: Desk[]) => void;
   selectedDesk: Desk | null;
+  hideToggleButton?: boolean;
 }
 
 export default function AdminPanel({
@@ -50,6 +51,7 @@ export default function AdminPanel({
   onExportDesks,
   onImportDesks,
   selectedDesk,
+  hideToggleButton = false,
 }: AdminPanelProps) {
   const [newDeskName, setNewDeskName] = useState('');
   const [newDeskStatus, setNewDeskStatus] = useState<DeskStatus>('available');
@@ -105,18 +107,20 @@ export default function AdminPanel({
   return (
     <Box sx={{ borderLeft: 1, borderColor: 'divider', p: 2, overflowY: 'auto', height: '100%' }}>
       {/* Admin Mode Toggle */}
-      <Box sx={{ mb: 3 }}>
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={onToggleAdminMode}
-          color={isAdminMode ? 'error' : 'success'}
-          startIcon={isAdminMode ? <LockIcon /> : <LockOpenIcon />}
-          sx={{ py: 1.5 }}
-        >
-          {isAdminMode ? 'Exit Admin Mode' : 'Enter Admin Mode'}
-        </Button>
-      </Box>
+      {!hideToggleButton && (
+        <Box sx={{ mb: 3 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={onToggleAdminMode}
+            color={isAdminMode ? 'error' : 'success'}
+            startIcon={isAdminMode ? <LockIcon /> : <LockOpenIcon />}
+            sx={{ py: 1.5 }}
+          >
+            {isAdminMode ? 'Exit Admin Mode' : 'Enter Admin Mode'}
+          </Button>
+        </Box>
+      )}
 
       {isAdminMode && (
         <>
@@ -272,23 +276,6 @@ export default function AdminPanel({
           </Paper>
         </>
       )}
-
-      {/* Legend */}
-      <Paper elevation={0} sx={{ p: 2, mt: 3, bgcolor: 'grey.50' }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Legend
-        </Typography>
-        <List dense>
-          {statusColors.map((status) => (
-            <ListItem key={status.value} sx={{ py: 0.5 }}>
-              <ListItemIcon sx={{ minWidth: 32 }}>
-                <CircleIcon sx={{ fontSize: 20, color: status.color }} />
-              </ListItemIcon>
-              <ListItemText primary={status.label} primaryTypographyProps={{ variant: 'body2' }} />
-            </ListItem>
-          ))}
-        </List>
-      </Paper>
 
       {/* Import Modal */}
       <Dialog open={showImportModal} onClose={() => setShowImportModal(false)} maxWidth="md" fullWidth>

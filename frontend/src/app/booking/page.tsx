@@ -7,28 +7,15 @@ import BookingModal from '@/components/BookingModal';
 import AdminPanel from '@/components/AdminPanel';
 import {
   Box,
-  Container,
   Typography,
   TextField,
-  Paper,
-  Card,
-  CardContent,
-  Checkbox,
-  FormControlLabel,
-  ToggleButtonGroup,
-  ToggleButton,
   Alert,
-  Divider,
+  Chip,
 } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import EventIcon from '@mui/icons-material/Event';
-import GridViewIcon from '@mui/icons-material/GridView';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import { generate216Desks } from '@/utils/generateDesks';
-
-// Generate 216 desks distributed across the floor plan
-const INITIAL_DESKS: Desk[] = generate216Desks();
-// const INITIAL_DESKS: Desk[] = [];
+import FilterListIcon from '@mui/icons-material/FilterList';
+import { apiService } from '@/services/api';
 
 
 export default function BookingPage() {
@@ -41,60 +28,61 @@ export default function BookingPage() {
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
-  const [viewMode, setViewMode] = useState<'floor-plan' | 'list'>('floor-plan');
+  const [filters, setFilters] = useState({
+    monitor: false,
+    standing: false,
+    window: false,
+  });
 
+  // Keyboard shortcut for admin mode (Ctrl+Shift+M)
   useEffect(() => {
-    const savedDesks = localStorage.getItem('desk-layout');
-    if (savedDesks) {
-      try {
-        const parsed: Desk[] = JSON.parse(savedDesks);
-        // Merge with INITIAL_DESKS to ensure meeting rooms and recreational spaces have proper type
-        const merged = parsed.map(savedDesk => {
-          const initialDesk = INITIAL_DESKS.find(d => d.id === savedDesk.id);
-          // Preserve booking information but restore type and capacity from INITIAL_DESKS
-          // Also check by name if ID doesn't match (for meeting rooms/recreational added manually)
-          const initialDeskByName = !initialDesk && savedDesk.name 
-            ? INITIAL_DESKS.find(d => d.name === savedDesk.name && (d.type === 'meeting-room' || d.type === 'recreational'))
-            : null;
-          
-          const matchingInitialDesk = initialDesk || initialDeskByName;
-          
-          return {
-            ...savedDesk,
-            type: matchingInitialDesk?.type || savedDesk.type || 'desk',
-            capacity: matchingInitialDesk?.capacity || savedDesk.capacity,
-          };
-        });
-        
-        // Add any missing desks from INITIAL_DESKS (e.g., new meeting rooms)
-        const missingDesks = INITIAL_DESKS.filter(initialDesk => 
-          !merged.find(d => d.id === initialDesk.id)
-        );
-        
-        setDesks([...merged, ...missingDesks]);
-      } catch (error) {
-        console.error('Failed to load saved desks:', error);
-        setDesks(INITIAL_DESKS);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'M') {
+        e.preventDefault();
+        setIsAdminMode(prev => !prev);
+        setSelectedDesk(null);
+        setPendingDeskToAdd(null);
       }
-    } else {
-      setDesks(INITIAL_DESKS);
-    }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Load desks and bookings from backend API
   useEffect(() => {
-    if (desks.length > 0) {
-      // Ensure all desks have proper type before saving
-      const desksWithTypes = desks.map(desk => {
-        const initialDesk = INITIAL_DESKS.find(d => d.id === desk.id);
-        return {
-          ...desk,
-          type: initialDesk?.type || desk.type || 'desk',
-          capacity: initialDesk?.capacity || desk.capacity,
-        };
-      });
-      localStorage.setItem('desk-layout', JSON.stringify(desksWithTypes));
-    }
-  }, [desks]);
+    const loadData = async () => {
+      try {
+        // Fetch rooms and bookings from backend API
+        const [roomsResponse, bookingsResponse] = await Promise.all([
+          apiService.getRooms(),
+          apiService.getBookings(),
+        ]);
+
+        // Transform backend data to frontend Desk format
+        const desks = await apiService.transformRoomsToDesks(
+          roomsResponse.rooms,
+          bookingsResponse.bookings
+        );
+
+        setDesks(desks);
+      } catch (error) {
+        console.error('Failed to load desks from API:', error);
+        // Fallback: try localStorage for migration
+        const savedDesks = localStorage.getItem('desk-layout');
+        if (savedDesks) {
+          try {
+            const parsed: Desk[] = JSON.parse(savedDesks);
+            setDesks(parsed);
+          } catch (e) {
+            console.error('Failed to load from localStorage:', e);
+          }
+        }
+      }
+    };
+
+    loadData();
+  }, []);
 
   const handleDeskClick = (desk: Desk) => {
     if (isAdminMode) {
@@ -136,45 +124,65 @@ export default function BookingPage() {
     );
   };
 
-  const handleBookDesk = (deskId: number, date: string, startTime?: string, endTime?: string, duration?: number, userName?: string, participants?: string[]) => {
-    setDesks(prev =>
-      prev.map(desk => {
-        if (desk.id !== deskId) return desk;
-        
-        const isEventSpace = desk.type === 'meeting-room' || desk.type === 'recreational';
-        const existingBookings = desk.bookings || [];
-        
-        if (isEventSpace && startTime && endTime) {
-          // Add new booking to event spaces (meeting room or recreational) array
-          const newBooking = {
-            deskId,
-            userName: userName || 'You',
-            date,
-            startTime,
-            endTime,
-            duration,
-            participants: participants || [],
-          };
+  const handleBookDesk = async (deskId: number, date: string, startTime?: string, endTime?: string, duration?: number, userName?: string, participants?: string[]) => {
+    try {
+      const finalStartTime = startTime || '09:00';
+      const finalEndTime = endTime || '18:00';
+      const finalUserName = userName || 'You';
+
+      // Transform and create booking via backend API
+      const bookingData = await apiService.transformBookingToBackend(
+        deskId,
+        date,
+        finalStartTime,
+        finalEndTime,
+        finalUserName
+      );
+
+      await apiService.createBooking(bookingData);
+
+      // Update local state
+      setDesks(prev =>
+        prev.map(desk => {
+          if (desk.id !== deskId) return desk;
           
-          return {
-            ...desk,
-            bookings: [...existingBookings, newBooking],
-            // Update status if fully booked
-            status: 'available' as DeskStatus, // Keep available, but show bookings
-          };
-        } else {
-          // Desk: book for whole day
-          return {
-            ...desk,
-            status: 'booked' as DeskStatus,
-            bookedBy: userName || 'You',
-            bookedDate: date,
-            bookedStartTime: '09:00',
-            bookedEndTime: '18:00',
-          };
-        }
-      })
-    );
+          const isEventSpace = desk.type === 'meeting-room' || desk.type === 'recreational';
+          const existingBookings = desk.bookings || [];
+          
+          if (isEventSpace && startTime && endTime) {
+            // Add new booking to event spaces (meeting room or recreational) array
+            const newBooking = {
+              deskId,
+              userName: finalUserName,
+              date,
+              startTime: finalStartTime,
+              endTime: finalEndTime,
+              duration,
+              participants: participants || [],
+            };
+            
+            return {
+              ...desk,
+              bookings: [...existingBookings, newBooking],
+              status: 'available' as DeskStatus, // Keep available, but show bookings
+            };
+          } else {
+            // Desk: book for whole day
+            return {
+              ...desk,
+              status: 'booked' as DeskStatus,
+              bookedBy: finalUserName,
+              bookedDate: date,
+              bookedStartTime: finalStartTime,
+              bookedEndTime: finalEndTime,
+            };
+          }
+        })
+      );
+    } catch (error) {
+      console.error('Failed to create booking:', error);
+      // TODO: Show error notification to user
+    }
   };
 
   const handleExportDesks = () => {
@@ -202,160 +210,236 @@ export default function BookingPage() {
   const myBookings = desks.filter(d => d.status === 'booked' && d.bookedBy === 'You').length;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, height: { xs: 'auto', lg: '100vh' }, bgcolor: 'background.default' }}>
-      {/* Left Sidebar */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: '#fafafa' }}>
+      {/* Horizontal Top Bar - Book a Desk */}
       <Box sx={{ 
-        width: { xs: '100%', lg: 320 }, 
-        bgcolor: 'background.paper', 
-        borderRight: { xs: 0, lg: 1 }, 
-        borderBottom: { xs: 1, lg: 0 },
-        borderColor: 'divider', 
-        p: { xs: 2, sm: 3 }, 
-        overflowY: 'auto',
-        maxHeight: { xs: '40vh', lg: '100vh' }
+        width: '100%', 
+        bgcolor: 'white', 
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        px: { xs: 2, sm: 3, md: 4 },
+        py: { xs: 2, sm: 2.5, md: 3 },
       }}>
+        {/* Header */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
+          <Typography 
+            variant="h4" 
+            fontWeight="700" 
+            sx={{ 
+              letterSpacing: '-0.03em',
+              fontSize: { xs: '1.5rem', sm: '2rem' },
+              color: '#1a1a1a'
+            }}
+          >
             Book a Desk
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Choose a personal space
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#6b7280',
+              fontSize: '0.875rem',
+              mt: 0.5
+            }}
+          >
+            Choose your personal workspace for the day
           </Typography>
         </Box>
 
-        {/* Date Selector */}
-        <Box sx={{ mb: 3 }}>
+        {/* Main Controls - Cleaner Grid Layout */}
+        <Box sx={{ 
+          display: 'grid',
+          gridTemplateColumns: { 
+            xs: '1fr',
+            sm: 'auto 1fr auto',
+            md: 'auto 1fr auto auto auto'
+          },
+          gap: 2,
+          alignItems: 'center',
+          mb: 2.5
+        }}>
+          {/* Date Selector */}
           <TextField
             label="Select Date"
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             inputProps={{ min: new Date().toISOString().split('T')[0] }}
-            fullWidth
+            size="small"
             InputLabelProps={{ shrink: true }}
             InputProps={{
-              startAdornment: <EventIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+              startAdornment: <EventIcon sx={{ mr: 0.5, color: '#9ca3af', fontSize: 18 }} />,
+            }}
+            sx={{ 
+              minWidth: 200,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: 'white',
+                '&:hover': {
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#3b82f6',
+                  }
+                }
+              }
             }}
           />
-        </Box>
 
-        {/* Location Info */}
-        <Paper elevation={0} sx={{ mb: 3, p: 2, bgcolor: 'primary.lighter', border: 1, borderColor: 'primary.light' }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-            <LocationOnIcon color="primary" />
+          {/* Location Info - Compact */}
+          <Box 
+            sx={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 2,
+              py: 1,
+              bgcolor: '#eff6ff',
+              borderRadius: 2,
+              border: '1px solid #bfdbfe',
+            }}
+          >
+            <LocationOnIcon sx={{ color: '#3b82f6', fontSize: 18 }} />
             <Box>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                Location
+              <Typography variant="body2" fontWeight="600" sx={{ color: '#1e40af', fontSize: '0.813rem' }}>
+                6L Iuliu Maniu Blvd, Floor 4
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                6L Iuliu Maniu Blvd
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Floor 4, Drop-Ins (Bucharest)
+              <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
+                Drop-Ins, Bucharest
               </Typography>
             </Box>
           </Box>
-        </Paper>
 
-        {/* Stats */}
-        <Box sx={{ mb: 3, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-          <Card sx={{ bgcolor: 'success.lighter', border: 1, borderColor: 'success.light' }}>
-            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-              <Typography variant="h4" fontWeight="bold" color="success.dark">
-                {availableDesks}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Available
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card sx={{ bgcolor: 'primary.lighter', border: 1, borderColor: 'primary.light' }}>
-            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-              <Typography variant="h4" fontWeight="bold" color="primary.dark">
-                {myBookings}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Your Bookings
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* View Toggle */}
-        <Box sx={{ mb: 3 }}>
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(e, newValue) => newValue && setViewMode(newValue)}
-            fullWidth
-            size="small"
+          {/* Stats Cards - Compact */}
+          <Box 
+            sx={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 2.5,
+              py: 1.5,
+              bgcolor: '#f0fdf4',
+              borderRadius: 2,
+              border: '1px solid #bbf7d0',
+            }}
           >
-            <ToggleButton value="floor-plan">
-              <GridViewIcon sx={{ mr: 1 }} fontSize="small" />
-              Floor Plan
-            </ToggleButton>
-            <ToggleButton value="list">
-              <ViewListIcon sx={{ mr: 1 }} fontSize="small" />
-              List
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Filters */}
-        <Box>
-          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-            Filters
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            <FormControlLabel
-              control={<Checkbox size="small" />}
-              label={<Typography variant="body2">Monitor</Typography>}
-            />
-            <FormControlLabel
-              control={<Checkbox size="small" />}
-              label={<Typography variant="body2">Standing Desk</Typography>}
-            />
-            <FormControlLabel
-              control={<Checkbox size="small" />}
-              label={<Typography variant="body2">Near Window</Typography>}
-            />
+            <Typography variant="h5" fontWeight="700" sx={{ color: '#166534', fontSize: '1.875rem' }}>
+              {availableDesks}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#4b5563', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.688rem' }}>
+              Available
+            </Typography>
+          </Box>
+          
+          <Box 
+            sx={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 2.5,
+              py: 1.5,
+              bgcolor: '#eff6ff',
+              borderRadius: 2,
+              border: '1px solid #bfdbfe',
+            }}
+          >
+            <Typography variant="h5" fontWeight="700" sx={{ color: '#1e40af', fontSize: '1.875rem' }}>
+              {myBookings}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#4b5563', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.688rem' }}>
+              Your<br/>Bookings
+            </Typography>
           </Box>
         </Box>
+
+        {/* Filters Row - Clean Design */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#6b7280' }}>
+            <FilterListIcon sx={{ fontSize: 16 }} />
+            <Typography variant="caption" fontWeight="600" sx={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.688rem' }}>
+              Filters
+            </Typography>
+          </Box>
+          <Chip
+            label="Monitor"
+            size="small"
+            onClick={() => setFilters(prev => ({ ...prev, monitor: !prev.monitor }))}
+            sx={{ 
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              bgcolor: filters.monitor ? '#3b82f6' : 'white',
+              color: filters.monitor ? 'white' : '#4b5563',
+              border: '1px solid',
+              borderColor: filters.monitor ? '#3b82f6' : '#e5e7eb',
+              '&:hover': {
+                bgcolor: filters.monitor ? '#2563eb' : '#f9fafb',
+              }
+            }}
+          />
+          <Chip
+            label="Standing Desk"
+            size="small"
+            onClick={() => setFilters(prev => ({ ...prev, standing: !prev.standing }))}
+            sx={{ 
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              bgcolor: filters.standing ? '#3b82f6' : 'white',
+              color: filters.standing ? 'white' : '#4b5563',
+              border: '1px solid',
+              borderColor: filters.standing ? '#3b82f6' : '#e5e7eb',
+              '&:hover': {
+                bgcolor: filters.standing ? '#2563eb' : '#f9fafb',
+              }
+            }}
+          />
+          <Chip
+            label="Near Window"
+            size="small"
+            onClick={() => setFilters(prev => ({ ...prev, window: !prev.window }))}
+            sx={{ 
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              bgcolor: filters.window ? '#3b82f6' : 'white',
+              color: filters.window ? 'white' : '#4b5563',
+              border: '1px solid',
+              borderColor: filters.window ? '#3b82f6' : '#e5e7eb',
+              '&:hover': {
+                bgcolor: filters.window ? '#2563eb' : '#f9fafb',
+              }
+            }}
+          />
+        </Box>
       </Box>
 
-      {/* Main Content - Floor Plan */}
-      <Box sx={{ flex: 1, position: 'relative', minHeight: { xs: '60vh', lg: '100vh' }, order: { xs: 2, lg: 1 } }}>
-        <FloorPlanMap
-          desks={desks}
-          onDeskClick={handleDeskClick}
-          onMapClick={handleMapClick}
-          isAdminMode={isAdminMode}
-          onDeskMove={handleDeskMove}
-          floorPlanImage="/MC_Etaj 4_Plan Compartimentare_11.09.2025-1.png"
-        />
-      </Box>
+      {/* Main Content Area */}
+      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Floor Plan */}
+        <Box sx={{ flex: 1, position: 'relative' }}>
+          <FloorPlanMap
+            desks={desks}
+            onDeskClick={handleDeskClick}
+            onMapClick={handleMapClick}
+            isAdminMode={isAdminMode}
+            onDeskMove={handleDeskMove}
+            floorPlanImage="/MC_Etaj 4_Plan Compartimentare_11.09.2025-1.png"
+          />
+        </Box>
 
-      {/* Right Sidebar - Admin Panel */}
-      <Box sx={{ 
-        width: { xs: '100%', lg: 320 },
-        order: { xs: 3, lg: 2 },
-        borderTop: { xs: 1, lg: 0 },
-        borderLeft: { xs: 0, lg: 1 },
-        borderColor: 'divider',
-        maxHeight: { xs: '40vh', lg: '100vh' },
-        overflowY: 'auto'
-      }}>
-        <AdminPanel
-          isAdminMode={isAdminMode}
-          onToggleAdminMode={handleToggleAdminMode}
-          onAddDesk={handleAddDesk}
-          onDeleteDesk={handleDeleteDesk}
-          onExportDesks={handleExportDesks}
-          onImportDesks={handleImportDesks}
-          selectedDesk={selectedDesk}
-        />
+        {/* Right Sidebar - Admin Panel (only visible in admin mode) */}
+        {isAdminMode && (
+          <Box sx={{ 
+            width: { xs: '100%', md: 320 },
+            borderLeft: 1,
+            borderColor: 'divider',
+            overflowY: 'auto'
+          }}>
+            <AdminPanel
+              isAdminMode={isAdminMode}
+              onToggleAdminMode={handleToggleAdminMode}
+              onAddDesk={handleAddDesk}
+              onDeleteDesk={handleDeleteDesk}
+              onExportDesks={handleExportDesks}
+              onImportDesks={handleImportDesks}
+              selectedDesk={selectedDesk}
+              hideToggleButton={true}
+            />
+          </Box>
+        )}
       </Box>
 
       {/* Booking Modal */}
@@ -372,7 +456,7 @@ export default function BookingPage() {
         <Box
           sx={{
             position: 'fixed',
-            bottom: 16,
+            bottom: 80,
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 50,
