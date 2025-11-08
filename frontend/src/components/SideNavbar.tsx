@@ -50,7 +50,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     pathname?.includes('/home/booking-grid')
   );
   const [userSettingsOpen, setUserSettingsOpen] = useState(
-    pathname === '/avatar-builder'
+    pathname === '/avatar-builder' || pathname === '/home/settings'
   );
 
   const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -111,7 +111,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     );
     // Update user settings open state based on pathname
     setUserSettingsOpen(
-      pathname === '/avatar-builder'
+      pathname === '/avatar-builder' || pathname === '/home/settings'
     );
   }, [pathname]);
 
@@ -136,7 +136,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   ];
 
   const userSettingsSubmenu = [
-    { id: 'General Settings', label: 'General Settings', path: null, icon: <SettingsIcon /> },
+    { id: 'General Settings', label: 'General Settings', path: '/home/settings', icon: <SettingsIcon /> },
     { id: 'Edit avatar', label: 'Edit avatar', path: '/avatar-builder', icon: <EditIcon /> },
   ];
 

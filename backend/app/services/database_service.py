@@ -116,5 +116,24 @@ class DatabaseService:
             where={'id': user_id}
         )
         return user
+    
+    async def update_user_settings(self, user_id: int, update_data: Dict[str, Any]) -> Optional[User]:
+        """
+        Update user settings (name, password, etc.)
+        """
+        mapped_data = {}
+        if 'name' in update_data:
+            mapped_data['name'] = update_data['name']
+        if 'password' in update_data:
+            mapped_data['password'] = update_data['password']
+        
+        if not mapped_data:
+            return None
+        
+        user = await prisma.user.update(
+            data=mapped_data,
+            where={'id': user_id}
+        )
+        return user
 
 db_service = DatabaseService()

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from app.services.database_service import db_service
@@ -21,7 +21,16 @@ class UpdateAvatarRequest(BaseModel):
     user_id: int
     avatar: str
 
+class UpdateUserSettingsRequest(BaseModel):
+    name: Optional[str] = None
+    password: Optional[str] = None
+
 class UpdateAvatarResponse(BaseModel):
+    success: bool
+    message: str
+    user: dict = None
+
+class UpdateUserSettingsResponse(BaseModel):
     success: bool
     message: str
     user: dict = None
@@ -90,6 +99,49 @@ async def update_avatar(avatar_data: UpdateAvatarRequest):
     return {
         "success": True,
         "message": "Avatar updated successfully",
+        "user": user_data
+    }
+
+@router.put("/settings/{user_id}", response_model=UpdateUserSettingsResponse)
+async def update_user_settings(user_id: int, settings_data: UpdateUserSettingsRequest):
+    """
+    Update user settings (name, password)
+    """
+    user = await db_service.get_user_by_id(user_id)
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prepare update data
+    update_data = {}
+    if settings_data.name is not None:
+        if not settings_data.name.strip():
+            raise HTTPException(status_code=400, detail="Name cannot be empty")
+        update_data['name'] = settings_data.name.strip()
+    if settings_data.password is not None:
+        if len(settings_data.password) < 3:
+            raise HTTPException(status_code=400, detail="Password must be at least 3 characters long")
+        update_data['password'] = settings_data.password
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    # Update user settings
+    updated_user = await db_service.update_user_settings(user_id, update_data)
+    
+    if not updated_user:
+        raise HTTPException(status_code=500, detail="Failed to update settings")
+    
+    # Return updated user data without password
+    user_data = {
+        "id": updated_user.id,
+        "name": updated_user.name,
+        "avatar": updated_user.avatar
+    }
+    
+    return {
+        "success": True,
+        "message": "Settings updated successfully",
         "user": user_data
     }
 

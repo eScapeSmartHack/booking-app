@@ -200,6 +200,24 @@ class ApiService {
   }
 
   /**
+   * PUT /users/settings/{user_id}
+   * Update user settings (name, password)
+   */
+  async updateUserSettings(userId: number, settings: { name?: string; password?: string }): Promise<{ success: boolean; message: string; user: any }> {
+    const response = await this.fetchWithErrorHandling<{ success: boolean; message: string; user: any }>(
+      `${API_BASE_URL}/users/settings/${userId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      }
+    );
+    return response;
+  }
+
+  /**
    * POST /bookings/booking
    * Create a new booking in backend
    * Backend expects: { id_room, id_user, date: "YYYY-MM-DD", start: "HH:MM", end: "HH:MM" }
