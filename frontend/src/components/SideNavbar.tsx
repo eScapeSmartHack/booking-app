@@ -129,9 +129,9 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   };
 
   const personalSpacesSubmenu = [
+    { id: 'Book a Place', label: 'Book a Place', path: '/booking', icon: <MapIcon /> },
     { id: 'Manage bookings', label: 'Manage bookings', path: '/home/bookings', icon: <ViewListIcon /> },
     { id: 'Upcoming Bookings', label: 'Upcoming Bookings', path: '/home', icon: <CalendarTodayIcon /> },
-    { id: 'Floorplan', label: 'Floorplan', path: '/booking', icon: <MapIcon /> },
     { id: 'Booking grid', label: 'Booking grid', path: '/home/booking-grid', icon: <ViewListIcon /> },
   ];
 

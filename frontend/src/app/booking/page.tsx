@@ -213,7 +213,31 @@ function BookingPageContent() {
   };
 
   const availableDesks = desks.filter(d => d.status === 'available').length;
-  const myBookings = desks.filter(d => d.status === 'booked' && d.bookedBy === 'You').length;
+  
+  // Calculate user's bookings from the desks displayed on the map
+  const myBookings = (() => {
+    // Get logged-in user from localStorage
+    if (typeof window === 'undefined') return 0;
+    
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return 0;
+
+    try {
+      const user = JSON.parse(userStr);
+      if (!user || !user.name) return 0;
+
+      // Count desks that are booked by the current user
+      // The desks are already filtered by selectedDate, so this counts bookings for the selected date
+      return desks.filter(d => 
+        d.status === 'booked' && 
+        d.bookedBy === user.name &&
+        d.bookedDate === selectedDate // Ensure it's for the selected date
+      ).length;
+    } catch (error) {
+      console.error('Failed to parse user data:', error);
+      return 0;
+    }
+  })();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: '#fafafa' }}>

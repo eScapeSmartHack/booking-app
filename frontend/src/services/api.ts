@@ -189,6 +189,17 @@ class ApiService {
   }
 
   /**
+   * GET /users/bookings/date/{date}
+   * Get all users' bookings for a specific date
+   */
+  async getBookingsByDate(date: string): Promise<{ date: string; total_bookings: number; users: Array<{ user_id: number; user_name: string; bookings_count: number; bookings: Array<{ id: number; id_room: number; date: string; start: string; end: string }> }> }> {
+    const response = await this.fetchWithErrorHandling<{ date: string; total_bookings: number; users: Array<{ user_id: number; user_name: string; bookings_count: number; bookings: Array<{ id: number; id_room: number; date: string; start: string; end: string }> }> }>(
+      `${API_BASE_URL}/users/bookings/date/${date}`
+    );
+    return response;
+  }
+
+  /**
    * POST /bookings/booking
    * Create a new booking in backend
    * Backend expects: { id_room, id_user, date: "YYYY-MM-DD", start: "HH:MM", end: "HH:MM" }
