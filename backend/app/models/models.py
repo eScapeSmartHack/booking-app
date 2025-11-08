@@ -8,8 +8,9 @@ class Room(BaseModel):
 class Booking(BaseModel):
     id_room: int
     id_user: int
-    start: str
-    end: str
+    date: str  # Format: YYYY-MM-DD
+    start: str  # Ora de început (ex: "09:00")
+    end: str    # Ora de sfârșit (ex: "17:00")
     
 class User(BaseModel):
     name: str

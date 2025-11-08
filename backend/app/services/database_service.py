@@ -20,6 +20,7 @@ class DatabaseService:
             # 'id': booking_data.get('id'),
             'id_user': booking_data.get('id_user'),
             'id_room': booking_data.get('id_room'),
+            'date': booking_data.get('date'),
             'start': booking_data.get('start'),
             'end': booking_data.get('end')
         }
@@ -41,12 +42,14 @@ class DatabaseService:
         return booking
 
     async def update_booking(self, booking_id: int, update_data: Dict[str, Any]) -> Optional[Book]:
-        mapped_data = []
+        mapped_data = {}
         for key, value in update_data.items():
             if key == 'start':
                 mapped_data['start'] = value
             elif key == 'end':
                 mapped_data['end'] = value
+            elif key == 'date':
+                mapped_data['date'] = value
             else:
                 mapped_data[key] = value
             
@@ -72,5 +75,10 @@ class DatabaseService:
         user = await prisma.user.find_many()
         
         return user
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
+        users = await prisma.user.find_unique(
+            where={'id': user_id}
+        )
+        return users
 
 db_service = DatabaseService()

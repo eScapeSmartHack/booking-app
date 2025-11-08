@@ -16,6 +16,7 @@ model Book {
   id      Int    @id @default(autoincrement())
   id_room Int
   id_user Int
+  date    String
   start   String
   end     String
 }
