@@ -32,6 +32,7 @@ export interface Desk {
   type?: SpaceType; // Optional, defaults to 'desk'
   attributes?: string[];
   bookedBy?: string;
+  bookedByAvatar?: string; // Avatar SVG of the user who booked this desk
   bookedDate?: string;
   bookedStartTime?: string; // HH:mm format
   bookedEndTime?: string; // HH:mm format

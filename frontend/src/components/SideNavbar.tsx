@@ -254,6 +254,23 @@ export default function SideNavbar({ children }: SideNavbarProps) {
               }}
             >
               <MenuItem
+                onClick={handleMenuClose}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    bgcolor: 'rgba(191, 219, 254, 0.1)',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: '#1e40af' }}>
+                  <SettingsIcon fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body2" sx={{ color: '#000000', fontWeight: 500 }}>
+                  General Settings
+                </Typography>
+              </MenuItem>
+              <MenuItem
                 onClick={() => {
                   handleMenuClose();
                   router.push('/avatar-builder');
@@ -271,23 +288,6 @@ export default function SideNavbar({ children }: SideNavbarProps) {
                 </ListItemIcon>
                 <Typography variant="body2" sx={{ color: '#000000', fontWeight: 500 }}>
                   Edit avatar
-                </Typography>
-              </MenuItem>
-              <MenuItem
-                onClick={handleMenuClose}
-                sx={{
-                  py: 1.5,
-                  px: 2,
-                  '&:hover': {
-                    bgcolor: 'rgba(191, 219, 254, 0.1)',
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40, color: '#1e40af' }}>
-                  <SettingsIcon fontSize="small" />
-                </ListItemIcon>
-                <Typography variant="body2" sx={{ color: '#000000', fontWeight: 500 }}>
-                  User settings
                 </Typography>
               </MenuItem>
               <Divider sx={{ my: 0.5, borderColor: '#bfdbfe' }} />

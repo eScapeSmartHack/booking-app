@@ -1,4 +1,5 @@
 import json
+import asyncio
 from typing import List, Optional, Dict, Any
 from prisma import Prisma
 from prisma.models import Book, Room, User
@@ -16,16 +17,25 @@ class DatabaseService:
         
     # booking
     async def create_booking(self, booking_data: Dict[str, Any]) -> Book:
+        # Validate required fields
+        id_user = booking_data.get('id_user')
+        id_room = booking_data.get('id_room')
+        date = booking_data.get('date')
+        start = booking_data.get('start')
+        end = booking_data.get('end')
+        
+        if id_user is None or id_room is None or date is None or start is None or end is None:
+            raise ValueError(f"Missing required fields. Got: id_user={id_user}, id_room={id_room}, date={date}, start={start}, end={end}")
+        
         mapped_data = {
-            # 'id': booking_data.get('id'),
-            'id_user': booking_data.get('id_user'),
-            'id_room': booking_data.get('id_room'),
-            'date': booking_data.get('date'),
-            'start': booking_data.get('start'),
-            'end': booking_data.get('end')
+            'id_user': id_user,
+            'id_room': id_room,
+            'date': date,
+            'start': start,
+            'end': end
         }
         
-        booking = await prisma.book.create(data= {**mapped_data})
+        booking = await prisma.book.create(data=mapped_data)
 
         return booking
     
@@ -75,6 +85,24 @@ class DatabaseService:
         user = await prisma.user.find_many()
         
         return user
+    
+    async def get_users_by_ids(self, user_ids: List[int]) -> List[User]:
+        """
+        Get users by their IDs using Prisma.
+        Fetches users from the User table using Prisma's find_unique.
+        Uses asyncio.gather to fetch all users in parallel for better performance.
+        """
+        if not user_ids:
+            return []
+        
+        # Fetch all users in parallel using Prisma's find_unique
+        # This uses the User model from schema.prisma with id field
+        tasks = [prisma.user.find_unique(where={'id': user_id}) for user_id in user_ids]
+        results = await asyncio.gather(*tasks)
+        
+        # Filter out None values (users that don't exist)
+        users = [user for user in results if user is not None]
+        return users
     
     async def get_user_by_id(self, user_id: int) -> Optional[User]:
         user = await prisma.user.find_unique(

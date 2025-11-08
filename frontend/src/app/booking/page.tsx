@@ -59,10 +59,11 @@ export default function BookingPage() {
           apiService.getBookings(),
         ]);
 
-        // Transform backend data to frontend Desk format
+        // Transform backend data to frontend Desk format, filtering by selected date
         const desks = await apiService.transformRoomsToDesks(
           roomsResponse.rooms,
-          bookingsResponse.bookings
+          bookingsResponse.bookings,
+          selectedDate // Filter bookings by selected date
         );
 
         setDesks(desks);
@@ -82,7 +83,7 @@ export default function BookingPage() {
     };
 
     loadData();
-  }, []);
+  }, [selectedDate]); // Reload when selectedDate changes
 
   const handleDeskClick = (desk: Desk) => {
     if (isAdminMode) {
@@ -141,47 +142,30 @@ export default function BookingPage() {
 
       await apiService.createBooking(bookingData);
 
-      // Update local state
-      setDesks(prev =>
-        prev.map(desk => {
-          if (desk.id !== deskId) return desk;
-          
-          const isEventSpace = desk.type === 'meeting-room' || desk.type === 'recreational';
-          const existingBookings = desk.bookings || [];
-          
-          if (isEventSpace && startTime && endTime) {
-            // Add new booking to event spaces (meeting room or recreational) array
-            const newBooking = {
-              deskId,
-              userName: finalUserName,
-              date,
-              startTime: finalStartTime,
-              endTime: finalEndTime,
-              duration,
-              participants: participants || [],
-            };
-            
-            return {
-              ...desk,
-              bookings: [...existingBookings, newBooking],
-              status: 'available' as DeskStatus, // Keep available, but show bookings
-            };
-          } else {
-            // Desk: book for whole day
-            return {
-              ...desk,
-              status: 'booked' as DeskStatus,
-              bookedBy: finalUserName,
-              bookedDate: date,
-              bookedStartTime: finalStartTime,
-              bookedEndTime: finalEndTime,
-            };
-          }
-        })
+      // Reload data from backend to get updated bookings
+      const [roomsResponse, bookingsResponse] = await Promise.all([
+        apiService.getRooms(),
+        apiService.getBookings(),
+      ]);
+
+      const updatedDesks = await apiService.transformRoomsToDesks(
+        roomsResponse.rooms,
+        bookingsResponse.bookings,
+        selectedDate // Filter bookings by selected date
       );
-    } catch (error) {
+
+      setDesks(updatedDesks);
+    } catch (error: any) {
       console.error('Failed to create booking:', error);
-      // TODO: Show error notification to user
+      // Show error to user with more details
+      let errorMessage = 'Failed to create booking. Please try again.';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = 'Cannot connect to server. Please make sure the backend is running.';
+      }
+      alert(errorMessage);
+      throw error; // Re-throw to prevent modal from closing on error
     }
   };
 

@@ -2,9 +2,10 @@
 
 import { Desk } from '@/types/desk';
 import { useState, useMemo, useEffect } from 'react';
-import { Box, Paper, Typography, Chip } from '@mui/material';
+import { Box, Paper, Typography, Chip, Avatar } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { generateTimeSlots, isWeekday } from '@/utils/timeUtils';
+import PersonIcon from '@mui/icons-material/Person';
 
 interface DeskMarkerProps {
   desk: Desk;
@@ -233,8 +234,35 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
 
       {isHovered && (
         <PopupCard elevation={3} mapScale={mapScale} data-desk-popup>
-          <Box sx={{ p: 1 }}>
-            <Typography variant="caption" fontWeight="bold" gutterBottom sx={{ fontSize: '0.7rem' }}>
+          <Box sx={{ p: 1, position: 'relative' }}>
+            {/* Avatar SVG from database in upper right corner - same as navbar */}
+            {desk.bookedBy && (
+              <Avatar
+                sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  width: 40,
+                  height: 40,
+                  bgcolor: desk.bookedByAvatar ? 'transparent' : '#1e40af',
+                  border: '2px solid #bfdbfe',
+                  '& img': {
+                    width: '100%',
+                    height: '100%',
+                  },
+                }}
+              >
+                {desk.bookedByAvatar ? (
+                  <Box
+                    dangerouslySetInnerHTML={{ __html: desk.bookedByAvatar }}
+                    sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  />
+                ) : (
+                  <PersonIcon sx={{ fontSize: 20, color: '#FFFFFF' }} />
+                )}
+              </Avatar>
+            )}
+            <Typography variant="caption" fontWeight="bold" gutterBottom sx={{ fontSize: '0.7rem', pr: desk.bookedBy ? 5 : 0 }}>
               {desk.name}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
@@ -252,7 +280,7 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
                 </Typography>
               )}
               {desk.bookedBy && (
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem', mt: 0.25 }}>
                   Booked by: {desk.bookedBy}
                 </Typography>
               )}

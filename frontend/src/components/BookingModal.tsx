@@ -39,10 +39,24 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
-  const [userName, setUserName] = useState('');
   const [participants, setParticipants] = useState(''); // Comma-separated list
   const [selectedDuration, setSelectedDuration] = useState<BookingDuration>(60);
   const [selectedStartTime, setSelectedStartTime] = useState<string>('');
+
+  // Get user name from localStorage
+  const getUserName = (): string => {
+    if (typeof window === 'undefined') return 'You';
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return user.name || 'You';
+      } catch {
+        return 'You';
+      }
+    }
+    return 'You';
+  };
 
   if (!desk) return null;
 
@@ -78,30 +92,52 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
     return getAvailableSlotsForDuration(allTimeSlots, selectedDuration);
   }, [allTimeSlots, selectedDuration, isDesk]);
 
-  const handleBook = () => {
-    if ((!desk.status || desk.status === 'available') && userName.trim()) {
+  const handleBook = async () => {
+    if (!desk.status || desk.status === 'available') {
+      const userName = getUserName();
       // Parse participants (comma-separated list, trimmed)
       const participantsList = participants
         .split(',')
         .map(p => p.trim())
         .filter(p => p.length > 0);
       
-      if (isDesk) {
-        // Desk: book for whole day (9:00 - 18:00)
-        onBook(desk.id, selectedDate, '09:00', '18:00', 540, userName);
-      } else if (isEventSpace) {
-        // Meeting room or Recreational: book for selected duration with participants
-        if (!selectedStartTime) return;
-        const startMinutes = parseInt(selectedStartTime.split(':')[0]) * 60 + parseInt(selectedStartTime.split(':')[1]);
-        const endMinutes = startMinutes + selectedDuration;
-        const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
-        onBook(desk.id, selectedDate, selectedStartTime, endTime, selectedDuration, userName, participantsList);
+      try {
+        if (isDesk) {
+          // Desk: book for whole day (9:00 - 18:00)
+          await onBook(desk.id, selectedDate, '09:00', '18:00', 540, userName);
+        } else if (isEventSpace) {
+          // Meeting room or Recreational: book for selected duration with participants
+          if (!selectedStartTime) return;
+          const startMinutes = parseInt(selectedStartTime.split(':')[0]) * 60 + parseInt(selectedStartTime.split(':')[1]);
+          const endMinutes = startMinutes + selectedDuration;
+          const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+          await onBook(desk.id, selectedDate, selectedStartTime, endTime, selectedDuration, userName, participantsList);
+        }
+        onClose();
+      } catch (error) {
+        // Error is already handled in handleBookDesk, don't close modal
+        console.error('Booking failed:', error);
       }
-      onClose();
     }
   };
 
   const isDateValid = isWeekday(dateObj);
+  
+  // Validate date is within 2 weeks from today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const twoWeeksLater = new Date(today);
+  twoWeeksLater.setDate(twoWeeksLater.getDate() + 14);
+  
+  const isDateInRange = dateObj >= today && dateObj <= twoWeeksLater;
+  const dateError = !isDateInRange;
+  const dateHelperText = dateError 
+    ? dateObj < today 
+      ? 'Date cannot be in the past' 
+      : 'Date cannot exceed 2 weeks from today'
+    : !isDateValid 
+      ? 'Only weekdays (Mon-Fri) are available' 
+      : '';
 
   return (
     <Dialog open={!!desk} onClose={onClose} maxWidth="sm" fullWidth>
@@ -186,17 +222,6 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
           {/* Booking Form (only if available) */}
           {(!desk.status || desk.status === 'available') && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-              <TextField
-                label="Your Name"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                placeholder="Enter your name"
-                fullWidth
-                InputProps={{
-                  startAdornment: <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                }}
-              />
-              
               {isEventSpace && (
                 <TextField
                   label="Participants (comma-separated)"
@@ -219,17 +244,20 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
                   setSelectedDate(e.target.value);
                   setSelectedStartTime('');
                 }}
-                inputProps={{ min: new Date().toISOString().split('T')[0] }}
+                inputProps={{ 
+                  min: today.toISOString().split('T')[0],
+                  max: twoWeeksLater.toISOString().split('T')[0]
+                }}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 InputProps={{
                   startAdornment: <EventIcon sx={{ mr: 1, color: 'text.secondary' }} />,
                 }}
-                error={!isDateValid}
-                helperText={!isDateValid ? 'Only weekdays (Mon-Fri) are available' : ''}
+                error={!isDateValid || dateError}
+                helperText={dateHelperText}
               />
 
-              {isMeetingRoom && (
+              {isEventSpace && (
                 <>
                   <FormControl fullWidth>
                     <InputLabel>Duration</InputLabel>
@@ -301,9 +329,9 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
             <Button
               onClick={handleBook}
               variant="contained"
-              disabled={!userName.trim() || !isDateValid || (isMeetingRoom && !selectedStartTime)}
+              disabled={!isDateValid || dateError || (isEventSpace && !selectedStartTime)}
             >
-              {isMeetingRoom ? 'Book Room' : 'Book Desk'}
+              {isEventSpace ? (isMeetingRoom ? 'Book Room' : 'Book Space') : 'Book Desk'}
             </Button>
           </>
         ) : (

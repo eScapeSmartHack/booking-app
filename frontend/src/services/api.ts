@@ -23,8 +23,14 @@ interface BackendBooking {
   id: number;
   id_room: number;
   id_user: number;
-  start: string; // ISO datetime string
-  end: string; // ISO datetime string
+  date: string; // YYYY-MM-DD format
+  start: string; // HH:MM format (time only)
+  end: string; // HH:MM format (time only)
+  user?: {
+    id: number;
+    name: string;
+    avatar: string;
+  } | null;
 }
 
 interface BackendUser {
@@ -174,9 +180,10 @@ class ApiService {
   /**
    * POST /bookings/booking
    * Create a new booking in backend
+   * Backend expects: { id_room, id_user, date: "YYYY-MM-DD", start: "HH:MM", end: "HH:MM" }
    */
-  async createBooking(booking: Omit<BackendBooking, 'id'>): Promise<{ message: string; booking: BackendBooking }> {
-    const response = await this.fetchWithErrorHandling<{ message: string; booking: BackendBooking }>(
+  async createBooking(booking: { id_room: number; id_user: number; date: string; start: string; end: string }): Promise<{ message: string; booking: any }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; booking: any }>(
       `${API_BASE_URL}/bookings/booking`,
       {
         method: 'POST',
@@ -234,26 +241,36 @@ class ApiService {
 
   /**
    * Transform backend data to frontend Desk format
+   * @param filterDate Optional date string (YYYY-MM-DD) to filter bookings by date
    */
-  async transformRoomsToDesks(rooms: BackendRoom[], bookings: BackendBooking[]): Promise<Desk[]> {
+  async transformRoomsToDesks(rooms: BackendRoom[], bookings: BackendBooking[], filterDate?: string): Promise<Desk[]> {
     // Ensure users are loaded
     if (!this.usersLoaded) {
       await this.loadUsers();
     }
 
+    // Filter bookings by date if filterDate is provided
+    let filteredBookings = bookings;
+    if (filterDate) {
+      filteredBookings = bookings.filter(b => b.date === filterDate);
+    }
+
     const desks: Desk[] = rooms.map(room => {
       const desk: Desk = JSON.parse(room.data);
       
-      // Find bookings for this room
-      const roomBookings = bookings.filter(b => b.id_room === room.id);
+      // Find bookings for this room (already filtered by date if filterDate was provided)
+      const roomBookings = filteredBookings.filter(b => b.id_room === room.id);
       
       if (roomBookings.length > 0) {
         // For meeting rooms and recreational spaces, use bookings array
         if (desk.type === 'meeting-room' || desk.type === 'recreational') {
           desk.bookings = roomBookings.map(booking => {
-            const { date, time: startTime } = this.parseISO(booking.start);
-            const { time: endTime } = this.parseISO(booking.end);
-            const user = this.users.find(u => u.id === booking.id_user);
+            // Backend returns: date (YYYY-MM-DD), start (HH:MM), end (HH:MM)
+            const date = booking.date || '';
+            const startTime = booking.start || '';
+            const endTime = booking.end || '';
+            // Use user data from booking if available, otherwise fallback to users list
+            const user = booking.user || this.users.find(u => u.id === booking.id_user);
             
             return {
               deskId: desk.id,
@@ -266,15 +283,34 @@ class ApiService {
         } else {
           // For regular desks, use the first booking
           const firstBooking = roomBookings[0];
-          const { date, time: startTime } = this.parseISO(firstBooking.start);
-          const { time: endTime } = this.parseISO(firstBooking.end);
-          const user = this.users.find(u => u.id === firstBooking.id_user);
+          // Backend returns: date (YYYY-MM-DD), start (HH:MM), end (HH:MM)
+          const date = firstBooking.date || '';
+          const startTime = firstBooking.start || '';
+          const endTime = firstBooking.end || '';
+          
+          // Use user data from booking if available, otherwise fallback to users list
+          const user = firstBooking.user || this.users.find(u => u.id === firstBooking.id_user);
           
           desk.status = 'booked';
           desk.bookedBy = user?.name || 'Unknown';
+          // Get avatar from user - ensure it's not empty string
+          const avatar = user?.avatar || '';
+          desk.bookedByAvatar = (avatar && avatar.trim() !== '') ? avatar : undefined;
           desk.bookedDate = date;
           desk.bookedStartTime = startTime;
           desk.bookedEndTime = endTime;
+        }
+      } else {
+        // No bookings for this date - reset desk to available
+        if (desk.type === 'meeting-room' || desk.type === 'recreational') {
+          desk.bookings = [];
+        } else {
+          desk.status = 'available';
+          desk.bookedBy = undefined;
+          desk.bookedByAvatar = undefined;
+          desk.bookedDate = undefined;
+          desk.bookedStartTime = undefined;
+          desk.bookedEndTime = undefined;
         }
       }
       
@@ -286,21 +322,40 @@ class ApiService {
 
   /**
    * Transform frontend booking to backend format
+   * Backend expects: { id_room, id_user, date: "YYYY-MM-DD", start: "HH:MM", end: "HH:MM" }
    */
   async transformBookingToBackend(
     deskId: number,
     date: string,
     startTime: string,
     endTime: string,
-    userName: string
-  ): Promise<Omit<BackendBooking, 'id'>> {
-    const userId = await this.getUserIdByName(userName);
+    userName?: string
+  ): Promise<{ id_room: number; id_user: number; date: string; start: string; end: string }> {
+    // Get user ID from localStorage if available, otherwise fallback to name lookup
+    let userId: number;
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          userId = user.id;
+        } catch {
+          // Fallback to name lookup
+          userId = await this.getUserIdByName(userName || 'You');
+        }
+      } else {
+        userId = await this.getUserIdByName(userName || 'You');
+      }
+    } else {
+      userId = await this.getUserIdByName(userName || 'You');
+    }
     
     return {
       id_room: deskId,
       id_user: userId,
-      start: this.formatToISO(date, startTime),
-      end: this.formatToISO(date, endTime),
+      date: date, // Already in YYYY-MM-DD format
+      start: startTime, // Time format like "09:00"
+      end: endTime, // Time format like "17:00"
     };
   }
 }
