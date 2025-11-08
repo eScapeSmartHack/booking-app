@@ -1,31 +1,79 @@
+import Link from 'next/link';
+import { Box, Container, Typography, Card, CardContent, Button, Stack } from '@mui/material';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ApiIcon from '@mui/icons-material/Api';
+import EventSeatIcon from '@mui/icons-material/EventSeat';
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <h1 className="text-4xl font-bold mb-4">
-          Welcome to FastAPI + Next.js
-        </h1>
-        <p className="text-lg mb-8">
-          Your full-stack application is ready to go!
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-6 border rounded-lg">
-            <h2 className="text-2xl font-semibold mb-2">Backend (FastAPI)</h2>
-            <p>API running on http://localhost:8000</p>
-            <a 
-              href="http://localhost:8000/docs" 
-              target="_blank"
-              className="text-blue-600 hover:underline"
-            >
-              View API Documentation →
-            </a>
-          </div>
-          <div className="p-6 border rounded-lg">
-            <h2 className="text-2xl font-semibold mb-2">Frontend (Next.js)</h2>
-            <p>App running on http://localhost:3000</p>
-          </div>
-        </div>
-      </div>
-    </main>
+    <Box
+      component="main"
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 3,
+      }}
+    >
+      <Container maxWidth="lg">
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Typography variant="h2" fontWeight="bold" gutterBottom>
+            Welcome to Booking App
+          </Typography>
+          <Typography variant="h6" color="text.secondary">
+            Your desk booking application is ready to go!
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
+          <Card elevation={3} sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <ApiIcon color="primary" fontSize="large" />
+                <Typography variant="h4" fontWeight="semibold">
+                  Backend (FastAPI)
+                </Typography>
+              </Box>
+              <Typography variant="body1" paragraph>
+                API running on http://localhost:8000
+              </Typography>
+              <Button
+                variant="outlined"
+                href="http://localhost:8000/docs"
+                target="_blank"
+                endIcon={<ArrowForwardIcon />}
+              >
+                View API Documentation
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card elevation={3} sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <EventSeatIcon color="primary" fontSize="large" />
+                <Typography variant="h4" fontWeight="semibold">
+                  Desk Booking
+                </Typography>
+              </Box>
+              <Typography variant="body1" paragraph>
+                Book your workspace for the day
+              </Typography>
+              <Button
+                variant="contained"
+                component={Link}
+                href="/booking"
+                endIcon={<ArrowForwardIcon />}
+                size="large"
+              >
+                Go to Booking
+              </Button>
+            </CardContent>
+          </Card>
+        </Box>
+      </Container>
+    </Box>
   );
 }
