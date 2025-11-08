@@ -178,6 +178,17 @@ class ApiService {
   }
 
   /**
+   * GET /users/bookings/user/{id_user}/next-two-weeks
+   * Get upcoming bookings for a specific user (next 2 weeks)
+   */
+  async getUserBookings(userId: number): Promise<{ user_id: number; user_name: string; bookings: Array<{ id: number; id_room: number; date: string; start: string; end: string }>; bookings_count: number; period: { start_date: string; end_date: string } }> {
+    const response = await this.fetchWithErrorHandling<{ user_id: number; user_name: string; bookings: Array<{ id: number; id_room: number; date: string; start: string; end: string }>; bookings_count: number; period: { start_date: string; end_date: string } }>(
+      `${API_BASE_URL}/users/bookings/user/${userId}/next-two-weeks`
+    );
+    return response;
+  }
+
+  /**
    * POST /bookings/booking
    * Create a new booking in backend
    * Backend expects: { id_room, id_user, date: "YYYY-MM-DD", start: "HH:MM", end: "HH:MM" }

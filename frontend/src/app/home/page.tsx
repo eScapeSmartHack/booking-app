@@ -57,21 +57,46 @@ export default function HomePage() {
 
   const loadBookings = async () => {
     try {
-      const response = await apiService.getBookings();
+      // Get logged-in user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        console.error('User not found in localStorage');
+        setLoading(false);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      if (!user || !user.id) {
+        console.error('Invalid user data');
+        setLoading(false);
+        return;
+      }
+
+      // Get user bookings from backend (next 2 weeks)
+      const userBookingsResponse = await apiService.getUserBookings(user.id);
       const roomsResponse = await apiService.getRooms();
       
-      // Transform bookings to include room info
-      const bookingsWithRoomInfo = response.bookings.map((booking: any) => {
+      // Transform bookings to include room info and convert date/time format
+      const bookingsWithRoomInfo = userBookingsResponse.bookings.map((booking: any) => {
         const room = roomsResponse.rooms.find((r: any) => r.id === booking.id_room);
         const roomData = room ? JSON.parse(room.data) : null;
+        
+        // Backend returns: date (YYYY-MM-DD), start (HH:MM), end (HH:MM)
+        // Convert to ISO string for Date parsing
+        const startDateTime = `${booking.date}T${booking.start}:00`;
+        const endDateTime = `${booking.date}T${booking.end}:00`;
+        
         return {
-          ...booking,
+          id: booking.id,
+          id_room: booking.id_room,
+          start: startDateTime,
+          end: endDateTime,
           roomName: roomData?.name || `Room ${booking.id_room}`,
           roomType: roomData?.type || 'desk',
         };
       });
 
-      // Filter only upcoming bookings
+      // Filter only upcoming bookings (in case any are in the past)
       const now = new Date();
       const upcoming = bookingsWithRoomInfo.filter((booking: Booking) => {
         const bookingDate = new Date(booking.start);
