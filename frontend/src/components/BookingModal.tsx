@@ -123,9 +123,9 @@ export default function BookingModal({ desk, onClose, onBook }: BookingModalProp
                 Type:
               </Typography>
               <Chip
-                label={isMeetingRoom ? 'Meeting Room' : 'Desk'}
+                label={isMeetingRoom ? 'Meeting Room' : isRecreational ? 'Recreational' : 'Desk'}
                 size="small"
-                color={isMeetingRoom ? 'primary' : 'default'}
+                color={isMeetingRoom || isRecreational ? 'primary' : 'default'}
               />
             </Box>
 

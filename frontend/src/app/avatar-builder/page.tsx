@@ -21,6 +21,7 @@ import {
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import SaveIcon from '@mui/icons-material/Save';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { apiService } from '@/services/api';
 
 // Avataaars options - verified working values from DiceBear Avataaars
 const avataaarsOptions = {
@@ -61,6 +62,8 @@ interface AvatarConfig {
 export default function AvatarBuilder() {
   const [avatarSvg, setAvatarSvg] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   
   // Avatar configuration
   const [skinColor, setSkinColor] = useState<string>('ffdbb4');
@@ -118,32 +121,61 @@ export default function AvatarBuilder() {
     setClothesColor(avataaarsOptions.clothesColor[Math.floor(Math.random() * avataaarsOptions.clothesColor.length)]);
   };
 
-  const saveAvatar = () => {
-    const avatarConfig: AvatarConfig = {
-      skinColor,
-      hairColor,
-      eyes,
-      eyebrows,
-      mouth,
-      top,
-      accessories,
-      accessoriesColor,
-      facialHair,
-      facialHairColor,
-      clothing,
-      clothesColor,
-    };
+  const saveAvatar = async () => {
+    setSaving(true);
+    setSaveError(null);
+    
+    try {
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User not found. Please log in again.');
+      }
+      
+      const user = JSON.parse(userStr);
+      if (!user || !user.id) {
+        throw new Error('Invalid user data. Please log in again.');
+      }
 
-    // Save to localStorage (in the future, this will be an API call to save to database)
-    localStorage.setItem('userAvatar', JSON.stringify(avatarConfig));
-    
-    // Also save the SVG for immediate use
-    localStorage.setItem('userAvatarSvg', avatarSvg);
-    
-    // Dispatch custom event to notify other components (like navbar) that avatar was updated
-    window.dispatchEvent(new Event('avatarUpdated'));
-    
-    setSaveSuccess(true);
+      const avatarConfig: AvatarConfig = {
+        skinColor,
+        hairColor,
+        eyes,
+        eyebrows,
+        mouth,
+        top,
+        accessories,
+        accessoriesColor,
+        facialHair,
+        facialHairColor,
+        clothing,
+        clothesColor,
+      };
+
+      // Save avatar SVG to backend
+      const response = await apiService.updateAvatar(user.id, avatarSvg);
+      
+      if (response.success && response.user) {
+        // Update user data in localStorage with new avatar
+        localStorage.setItem('user', JSON.stringify(response.user));
+        
+        // Also save config and SVG to localStorage for immediate use
+        localStorage.setItem('userAvatar', JSON.stringify(avatarConfig));
+        localStorage.setItem('userAvatarSvg', avatarSvg);
+        
+        // Dispatch custom event to notify other components (like navbar) that avatar was updated
+        window.dispatchEvent(new Event('avatarUpdated'));
+        
+        setSaveSuccess(true);
+      } else {
+        throw new Error('Failed to save avatar');
+      }
+    } catch (error: any) {
+      setSaveError(error.message || 'Failed to save avatar. Please try again.');
+      console.error('Error saving avatar:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const loadSavedAvatar = () => {
@@ -209,6 +241,7 @@ export default function AvatarBuilder() {
             variant="contained"
             startIcon={<SaveIcon />}
             onClick={saveAvatar}
+            disabled={saving}
             fullWidth
             size="large"
             sx={{
@@ -217,10 +250,31 @@ export default function AvatarBuilder() {
               '&:hover': {
                 bgcolor: '#1e3a8a',
               },
+              '&:disabled': {
+                bgcolor: 'rgba(30, 64, 175, 0.5)',
+              },
             }}
           >
-            Save Avatar
+            {saving ? 'Saving...' : 'Save Avatar'}
           </Button>
+          
+          {saveError && (
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mt: 1,
+                bgcolor: '#fee2e2',
+                border: '1px solid #fecaca',
+                color: '#991b1b',
+                '& .MuiAlert-icon': {
+                  color: '#dc2626',
+                },
+              }}
+              onClose={() => setSaveError(null)}
+            >
+              {saveError}
+            </Alert>
+          )}
         </Box>
 
         <Divider sx={{ my: 3, borderColor: '#bfdbfe' }} />

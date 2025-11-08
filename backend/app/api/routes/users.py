@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException
+from typing import List
+from pydantic import BaseModel
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 from app.services.database_service import db_service
@@ -7,9 +9,90 @@ from app.models.models import Booking
 
 router = APIRouter()
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class LoginResponse(BaseModel):
+    success: bool
+    message: str
+    user: dict = None
+
+class UpdateAvatarRequest(BaseModel):
+    user_id: int
+    avatar: str
+
+class UpdateAvatarResponse(BaseModel):
+    success: bool
+    message: str
+    user: dict = None
+
 @router.get("/")
 async def get_users():
     return {"message": "List of users", "users": await db_service.get_all_users()}
+
+@router.post("/login", response_model=LoginResponse)
+async def login(login_data: LoginRequest):
+    """
+    Authenticate user with username and password
+    """
+    users = await db_service.get_all_users()
+    
+    # Find user by username (name field)
+    user = None
+    for u in users:
+        if u.name == login_data.username:
+            user = u
+            break
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    # Check password (in production, this should compare hashed passwords)
+    if user.password != login_data.password:
+        raise HTTPException(status_code=401, detail="Wrong password")
+    
+    # Return user data without password
+    user_data = {
+        "id": user.id,
+        "name": user.name,
+        "avatar": user.avatar
+    }
+    
+    return {
+        "success": True,
+        "message": "Login successful",
+        "user": user_data
+    }
+
+@router.put("/avatar", response_model=UpdateAvatarResponse)
+async def update_avatar(avatar_data: UpdateAvatarRequest):
+    """
+    Update user avatar
+    """
+    user = await db_service.get_user_by_id(avatar_data.user_id)
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update avatar
+    updated_user = await db_service.update_user_avatar(avatar_data.user_id, avatar_data.avatar)
+    
+    if not updated_user:
+        raise HTTPException(status_code=500, detail="Failed to update avatar")
+    
+    # Return updated user data without password
+    user_data = {
+        "id": updated_user.id,
+        "name": updated_user.name,
+        "avatar": updated_user.avatar
+    }
+    
+    return {
+        "success": True,
+        "message": "Avatar updated successfully",
+        "user": user_data
+    }
 
 @router.get("/bookings/next-two-weeks")
 async def get_all_users_bookings_next_two_weeks():

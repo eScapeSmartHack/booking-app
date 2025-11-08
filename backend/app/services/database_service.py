@@ -80,5 +80,18 @@ class DatabaseService:
             where={'id': user_id}
         )
         return users
+    
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
+        user = await prisma.user.find_unique(
+            where={'id': user_id}
+        )
+        return user
+    
+    async def update_user_avatar(self, user_id: int, avatar: str) -> Optional[User]:
+        user = await prisma.user.update(
+            data={'avatar': avatar},
+            where={'id': user_id}
+        )
+        return user
 
 db_service = DatabaseService()

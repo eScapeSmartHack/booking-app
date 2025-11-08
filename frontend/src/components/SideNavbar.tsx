@@ -17,6 +17,7 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  Divider,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import PersonIcon from '@mui/icons-material/Person';
@@ -26,6 +27,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import MapIcon from '@mui/icons-material/Map';
 import SettingsIcon from '@mui/icons-material/Settings';
 import EditIcon from '@mui/icons-material/Edit';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const DRAWER_WIDTH = 290;
 
@@ -134,8 +136,8 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   ];
 
   const userSettingsSubmenu = [
-    { id: 'Edit avatar', label: 'Edit avatar', path: '/avatar-builder', icon: <EditIcon /> },
     { id: 'General Settings', label: 'General Settings', path: null, icon: <SettingsIcon /> },
+    { id: 'Edit avatar', label: 'Edit avatar', path: '/avatar-builder', icon: <EditIcon /> },
   ];
 
   const isSubItemSelected = (subItemPath: string) => {
@@ -286,6 +288,33 @@ export default function SideNavbar({ children }: SideNavbarProps) {
                 </ListItemIcon>
                 <Typography variant="body2" sx={{ color: '#000000', fontWeight: 500 }}>
                   User settings
+                </Typography>
+              </MenuItem>
+              <Divider sx={{ my: 0.5, borderColor: '#bfdbfe' }} />
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  // Clear user data and authentication
+                  localStorage.removeItem('user');
+                  localStorage.removeItem('isAuthenticated');
+                  localStorage.removeItem('userAvatar');
+                  localStorage.removeItem('userAvatarSvg');
+                  // Redirect to login
+                  router.push('/login');
+                }}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    bgcolor: 'rgba(191, 219, 254, 0.1)',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: '#1e40af' }}>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                <Typography variant="body2" sx={{ color: '#000000', fontWeight: 500 }}>
+                  Logout
                 </Typography>
               </MenuItem>
             </Menu>

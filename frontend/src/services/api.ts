@@ -34,6 +34,26 @@ interface BackendUser {
   avatar: string;
 }
 
+interface LoginResponse {
+  success: boolean;
+  message: string;
+  user: {
+    id: number;
+    name: string;
+    avatar: string;
+  } | null;
+}
+
+interface UpdateAvatarResponse {
+  success: boolean;
+  message: string;
+  user: {
+    id: number;
+    name: string;
+    avatar: string;
+  } | null;
+}
+
 /**
  * Real API Service - Connects to FastAPI Backend
  */
@@ -80,7 +100,17 @@ class ApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to extract error detail from response
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch {
+          // If response is not JSON, use default message
+        }
+        throw new Error(errorMessage);
       }
 
       return await response.json();
@@ -170,6 +200,36 @@ class ApiService {
       message: 'List of users',
       users: this.users,
     };
+  }
+
+  /**
+   * POST /users/login
+   * Authenticate user with username and password
+   */
+  async login(username: string, password: string): Promise<LoginResponse> {
+    const response = await this.fetchWithErrorHandling<LoginResponse>(
+      `${API_BASE_URL}/users/login`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      }
+    );
+    return response;
+  }
+
+  /**
+   * PUT /users/avatar
+   * Update user avatar
+   */
+  async updateAvatar(userId: number, avatar: string): Promise<UpdateAvatarResponse> {
+    const response = await this.fetchWithErrorHandling<UpdateAvatarResponse>(
+      `${API_BASE_URL}/users/avatar`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ user_id: userId, avatar }),
+      }
+    );
+    return response;
   }
 
   /**

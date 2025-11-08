@@ -90,7 +90,7 @@ export default function YourBookingsPage() {
             >
               <MenuItem value="Desk">Desk</MenuItem>
               <MenuItem value="Meeting Room">Meeting Room</MenuItem>
-              <MenuItem value="Office">Office</MenuItem>
+              <MenuItem value="recreational">Recreational</MenuItem>
             </Select>
           </FormControl>
           <Button
