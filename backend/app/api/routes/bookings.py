@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 from app.services.database_service import db_service
-from app.models.models import Booking
+from app.models.models import Booking, User
 
 
 router = APIRouter()

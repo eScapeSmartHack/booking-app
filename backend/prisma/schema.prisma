@@ -18,6 +18,14 @@ model Room {
 model Book {
   id             Int      @id @default(autoincrement())
   id_room        Int
+  id_user        Int
   start          String
   end            String
+}
+
+model User {
+  id          Int    @id @default(autoincrement())
+  name        String 
+  password    String 
+  avatar      String
 }

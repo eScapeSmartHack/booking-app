@@ -1,7 +1,7 @@
 import json
 from typing import List, Optional, Dict, Any
 from prisma import Prisma
-from prisma.models import Book, Room
+from prisma.models import Book, Room, User
 from pydantic import BaseModel, Field
 
 # prisma client
@@ -18,6 +18,7 @@ class DatabaseService:
     async def create_booking(self, booking_data: Dict[str, Any]) -> Book:
         mapped_data = {
             # 'id': booking_data.get('id'),
+            'id_user': booking_data.get('id_user'),
             'id_room': booking_data.get('id_room'),
             'start': booking_data.get('start'),
             'end': booking_data.get('end')
@@ -66,5 +67,10 @@ class DatabaseService:
         room = await prisma.room.find_many()
         
         return room
+    
+    async def get_all_users(self) -> List[User]:
+        user = await prisma.user.find_many()
+        
+        return user
 
 db_service = DatabaseService()
