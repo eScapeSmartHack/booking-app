@@ -29,16 +29,6 @@ app.add_middleware(
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-class Room(BaseModel):
-    id: int
-    data: str
-    
-
-class Booking(BaseModel):
-    id_room: int
-    start: str
-    end: str
-
 @app.get("/")
 async def root():
     return {"message": "Welcome to the API"}
@@ -47,20 +37,4 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
     
-@app.get("/rooms")
-async def get_rooms():
-    # This is a placeholder for actual room retrieval logic
-    return {"message": "List of rooms", "rooms": await db_service.get_all_rooms()}
-    
 
-@app.post("/bookings")
-async def create_booking(booking: Booking):
-    booking_dict = booking.model_dump()
-    
-    created_booking = await db_service.create_booking(booking_data=booking_dict)
-
-    return {"message": "Booking created", "booking": created_booking}
-
-@app.get("/bookings")
-async def get_bookings():
-     return {"message": "List of bookings", "bookings": await db_service.get_all_books()}
