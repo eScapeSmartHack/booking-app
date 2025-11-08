@@ -6,4 +6,4 @@ python-dotenv==1.0.0
 sqlalchemy==2.0.25
 python-multipart==0.0.6
 httpx==0.26.0
-prisma==0.11.0
+prisma==0.15.0
