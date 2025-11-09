@@ -2560,16 +2560,16 @@
   {
     "name": "Special Events Area",
     "position": {
-      "x": 17.285993178549383,
-      "y": 50.01868303793612
+      "x": 17.33102253032929,
+      "y": 49.71804208423291
     },
     "status": "available",
     "floor": "4",
     "type": "recreational",
-    "id": 232,
-    "escalation": true,
-    "bookings": []
-  },
+    "capacity": 50,
+    "managementOnly": false,
+    "id": 1762669901216
+  }
   {
     "id": 233,
     "name": "Office1",

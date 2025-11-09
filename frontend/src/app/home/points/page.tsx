@@ -26,6 +26,10 @@ import SchoolIcon from '@mui/icons-material/School';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import StarIcon from '@mui/icons-material/Star';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
+import SportsPoolIcon from '@mui/icons-material/SportsEsports';
+import SpaIcon from '@mui/icons-material/Spa';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 
 interface RewardItem {
   id: number;
@@ -42,6 +46,10 @@ export default function ManagePointsPage() {
   const [userPoints, setUserPoints] = useState(300);
   const [selectedReward, setSelectedReward] = useState<RewardItem | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  
+  // Mock data - în realitate ar veni de la backend
+  const userHistoricalRank = 2; // Poziția user-ului în topul prezențelor (1-3 = top 3)
+  const totalUsers = 45; // Total users pentru context
 
   const rewards: RewardItem[] = [
     {
@@ -237,6 +245,166 @@ export default function ManagePointsPage() {
             </Box>
           </CardContent>
         </Card>
+
+        {/* VIP Status - Top Attendee Benefit */}
+        {userHistoricalRank <= 3 && (
+          <Card
+            elevation={0}
+            sx={{
+              mb: 3,
+              bgcolor: 'white',
+              border: '2px solid #1e40af',
+              borderRadius: 2,
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <Box
+              sx={{
+                position: 'absolute',
+                top: -50,
+                right: -50,
+                width: 200,
+                height: 200,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, transparent 70%)',
+              }}
+            />
+            <CardContent sx={{ p: 3, position: 'relative' }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    bgcolor: '#eff6ff',
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MilitaryTechIcon sx={{ fontSize: 32, color: '#1e40af' }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Chip
+                      label={`#${userHistoricalRank} Top Attendee`}
+                      size="small"
+                      sx={{
+                        bgcolor: '#1e40af',
+                        color: '#fff',
+                        fontWeight: 700,
+                        border: 'none',
+                      }}
+                    />
+                    <Chip
+                      label="VIP Access"
+                      size="small"
+                      icon={<StarIcon sx={{ fontSize: 14, color: '#1e40af !important' }} />}
+                      sx={{
+                        bgcolor: '#eff6ff',
+                        color: '#1e40af',
+                        fontWeight: 600,
+                        border: '1px solid #1e40af',
+                        '& .MuiChip-icon': { color: '#1e40af' },
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="h6" fontWeight="700" sx={{ color: '#1e40af', mb: 1 }}>
+                    🎉 Congratulations! You're in the Top {userHistoricalRank}!
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#6b7280', mb: 2, lineHeight: 1.6 }}>
+                    Based on your exceptional office attendance record, you've earned a spot in the top {userHistoricalRank} out of {totalUsers} employees! 
+                    This achievement comes with exclusive benefits.
+                  </Typography>
+                  
+                  <Box
+                    sx={{
+                      bgcolor: '#eff6ff',
+                      borderRadius: 2,
+                      p: 2,
+                      border: '1px solid #e5e7eb',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                      <EventAvailableIcon sx={{ fontSize: 20, color: '#1e40af' }} />
+                      <Typography variant="body2" fontWeight="700" sx={{ color: '#1e40af' }}>
+                        Exclusive VIP Perks Unlocked:
+                      </Typography>
+                    </Box>
+                    <Stack spacing={1}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 6,
+                            height: 6,
+                            bgcolor: '#1e40af',
+                            borderRadius: '50%',
+                          }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <SportsPoolIcon sx={{ fontSize: 18, color: '#1e40af' }} />
+                          <Typography variant="body2" sx={{ color: '#1a1a1a' }}>
+                            <strong>Priority Booking</strong> for Billiard/Pool Table - Book up to 3 weeks in advance
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 6,
+                            height: 6,
+                            bgcolor: '#1e40af',
+                            borderRadius: '50%',
+                          }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <SpaIcon sx={{ fontSize: 18, color: '#1e40af' }} />
+                          <Typography variant="body2" sx={{ color: '#1a1a1a' }}>
+                            <strong>Extended Access</strong> to Wellness Room - Book 3 weeks ahead (vs 2 weeks for others)
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 6,
+                            height: 6,
+                            bgcolor: '#1e40af',
+                            borderRadius: '50%',
+                          }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <EmojiEventsIcon sx={{ fontSize: 18, color: '#1e40af' }} />
+                          <Typography variant="body2" sx={{ color: '#1a1a1a' }}>
+                            <strong>VIP Status</strong> in all recreational spaces - Your bookings get priority confirmation
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Stack>
+                  </Box>
+                  
+                  <Button
+                    variant="contained"
+                    sx={{
+                      mt: 2,
+                      bgcolor: '#1e40af',
+                      color: '#fff',
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      '&:hover': {
+                        bgcolor: '#1e3a8a',
+                      },
+                    }}
+                    onClick={() => window.location.href = '/booking?filter=recreational'}
+                  >
+                    Book Recreational Spaces Now
+                  </Button>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
 
         {/* How to Earn Points - Simplified */}
         <Card
