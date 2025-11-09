@@ -127,6 +127,26 @@ function BookingPageContent() {
     if (isAdminMode) {
       setSelectedDesk(desk);
     } else {
+      // Check if this is a management-only space
+      if (desk.managementOnly) {
+        // Check if user is a manager or admin
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            if (user.type !== 'MANAGER' && user.type !== 'ADMIN') {
+              setSnackbar({
+                open: true,
+                message: 'This space is reserved for management only.',
+                severity: 'warning',
+              });
+              return;
+            }
+          } catch (e) {
+            console.error('Failed to parse user data:', e);
+          }
+        }
+      }
       setSelectedDeskForModal(desk);
     }
   };
@@ -503,6 +523,25 @@ function BookingPageContent() {
               }
             }}
           />
+        </Box>
+
+        {/* Color Legend */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', px: 0.5 }}>
+          <Typography variant="caption" fontWeight="600" sx={{ color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.688rem' }}>
+            Legend:
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#10b981' }} />
+            <Typography variant="caption" sx={{ color: '#4b5563', fontSize: '0.75rem' }}>Available</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#7c3aed' }} />
+            <Typography variant="caption" sx={{ color: '#4b5563', fontSize: '0.75rem' }}>Management Only</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#ef4444' }} />
+            <Typography variant="caption" sx={{ color: '#4b5563', fontSize: '0.75rem' }}>Booked</Typography>
+          </Box>
         </Box>
       </Box>
 

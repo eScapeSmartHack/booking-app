@@ -2569,5 +2569,44 @@
     "id": 232,
     "escalation": true,
     "bookings": []
+  },
+  {
+    "id": 233,
+    "name": "Office1",
+    "position": {
+      "x": 87.8815164769567,
+      "y": 74.13594415469854
+    },
+    "status": "available",
+    "floor": "4",
+    "type": "desk",
+    "managementOnly": true,
+    "bookings": []
+  },
+  {
+    "id": 234,
+    "name": "Office2",
+    "position": {
+      "x": 87.8815164769567,
+      "y": 65.14899543581645
+    },
+    "status": "available",
+    "floor": "4",
+    "type": "desk",
+    "managementOnly": true,
+    "bookings": []
+  },
+  {
+    "id": 235,
+    "name": "Office3",
+    "position": {
+      "x": 88.05316006382576,
+      "y": 25.11622386988711
+    },
+    "status": "available",
+    "floor": "4",
+    "type": "desk",
+    "managementOnly": true,
+    "bookings": []
   }
 ]

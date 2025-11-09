@@ -15,8 +15,8 @@ interface DeskMarkerProps {
 }
 
 const MarkerCircle = styled(Box, {
-  shouldForwardProp: (prop) => prop !== 'status' && prop !== 'isHovered' && prop !== 'spaceType',
-})<{ status: string; isHovered: boolean; spaceType: string }>(({ theme, status, isHovered, spaceType }) => {
+  shouldForwardProp: (prop) => prop !== 'status' && prop !== 'isHovered' && prop !== 'spaceType' && prop !== 'managementOnly',
+})<{ status: string; isHovered: boolean; spaceType: string; managementOnly?: boolean }>(({ theme, status, isHovered, spaceType, managementOnly }) => {
   const getStatusColor = () => {
     // If selected, show special purple/blue color
     if (status === 'selected') {
@@ -30,6 +30,10 @@ const MarkerCircle = styled(Box, {
     
     // Check space type first when available
     if (status === 'available') {
+      // Management-only spaces show in purple/violet when available
+      if (managementOnly) {
+        return '#7c3aed'; // Purple/violet for management-only
+      }
       if (spaceType === 'meeting-room') {
         return theme.palette.primary.main; // Blue #2563eb
       }
@@ -252,7 +256,7 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <MarkerCircle status={desk.status || 'available'} isHovered={isHovered} spaceType={spaceType}>
+      <MarkerCircle status={desk.status || 'available'} isHovered={isHovered} spaceType={spaceType} managementOnly={desk.managementOnly}>
         {getStatusIcon() === 'dot' ? (
           <Box
             sx={{
@@ -322,6 +326,23 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
             <Typography variant="caption" fontWeight="bold" gutterBottom sx={{ fontSize: '0.7rem', pr: desk.bookedBy ? 5 : 0 }}>
               {desk.name}
             </Typography>
+            {desk.managementOnly && (
+              <Chip
+                label="Management Only"
+                size="small"
+                sx={{
+                  bgcolor: '#7c3aed',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: '0.6rem',
+                  height: 18,
+                  mb: 0.5,
+                  '& .MuiChip-label': {
+                    px: 1,
+                  },
+                }}
+              />
+            )}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
                 Floor: {desk.floor}

@@ -23,6 +23,8 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LockIcon from '@mui/icons-material/Lock';
@@ -56,6 +58,7 @@ export default function AdminPanel({
   const [newDeskFloor, setNewDeskFloor] = useState('4');
   const [newDeskType, setNewDeskType] = useState<SpaceType>('desk');
   const [newDeskCapacity, setNewDeskCapacity] = useState<number | undefined>(undefined);
+  const [newDeskManagementOnly, setNewDeskManagementOnly] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importText, setImportText] = useState('');
 
@@ -69,10 +72,12 @@ export default function AdminPanel({
       floor: newDeskFloor,
       type: newDeskType,
       capacity: newDeskCapacity,
+      managementOnly: newDeskManagementOnly,
     });
 
     setNewDeskName('');
     setNewDeskCapacity(undefined);
+    setNewDeskManagementOnly(false);
   };
 
   const handleImport = () => {
@@ -167,6 +172,21 @@ export default function AdminPanel({
                 />
               )}
 
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={newDeskManagementOnly}
+                    onChange={(e) => setNewDeskManagementOnly(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                    Management Only
+                  </Typography>
+                }
+              />
+
               <Button
                 variant="contained"
                 onClick={handleAddDesk}
@@ -195,6 +215,11 @@ export default function AdminPanel({
                   {selectedDesk.capacity && (
                     <Typography variant="body2">
                       <strong>Capacity:</strong> {selectedDesk.capacity}
+                    </Typography>
+                  )}
+                  {selectedDesk.managementOnly && (
+                    <Typography variant="body2" sx={{ color: '#7c3aed', fontWeight: 600 }}>
+                      <strong>Management Only:</strong> Yes
                     </Typography>
                   )}
                 </Box>

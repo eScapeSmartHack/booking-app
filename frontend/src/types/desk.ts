@@ -33,6 +33,7 @@ export interface Desk {
   type?: SpaceType; // Optional, defaults to 'desk'
   attributes?: string[];
   escalation?: boolean; // If true, requires manager approval for bookings
+  managementOnly?: boolean; // If true, only managers can book this space
   bookedBy?: string;
   bookedByAvatar?: string; // Avatar SVG of the user who booked this desk
   bookedByMood?: string; // Mood of the user who booked this desk: "happy", "sad", "stressed", "tired", "focused"
