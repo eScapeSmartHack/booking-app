@@ -161,12 +161,12 @@ export default function SideNavbar({ children }: SideNavbarProps) {
         <Toolbar sx={{ justifyContent: 'space-between', px: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography 
-              variant="h6" 
+              variant="h4" 
               sx={{ 
-                fontWeight: 600, 
+                fontWeight: 700, 
                 color: '#1e40af',
-                letterSpacing: '-0.01em',
-                fontSize: '1.5rem',
+                letterSpacing: '-0.02em',
+                fontSize: '2rem',
                 marginLeft: '15px',
               }}
             >
