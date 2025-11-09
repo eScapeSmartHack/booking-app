@@ -39,7 +39,6 @@ interface SideNavbarProps {
 export default function SideNavbar({ children }: SideNavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [drawerOpen, setDrawerOpen] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -133,7 +132,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     { id: 'Book a Place', label: 'Book a Place', path: '/booking', icon: <MapIcon /> },
     { id: 'Manage bookings', label: 'Manage bookings', path: '/home/bookings', icon: <ViewListIcon /> },
     { id: 'Upcoming Bookings', label: 'Upcoming Bookings', path: '/home', icon: <CalendarTodayIcon /> },
-    { id: 'Booking grid', label: 'Booking grid', path: '/home/booking-grid', icon: <ViewListIcon /> },
+    { id: 'Booking grid', label: 'Team Bookings', path: '/home/booking-grid', icon: <ViewListIcon /> },
   ];
 
   const userSettingsSubmenu = [
@@ -161,22 +160,6 @@ export default function SideNavbar({ children }: SideNavbarProps) {
       >
         <Toolbar sx={{ justifyContent: 'space-between', px: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              onClick={() => setDrawerOpen(!drawerOpen)}
-              sx={{ 
-                color: '#1e40af',
-                '&:hover': {
-                  bgcolor: 'rgba(191, 219, 254, 0.08)',
-                  color: '#bfdbfe',
-                },
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
             <Typography 
               variant="h6" 
               sx={{ 
@@ -326,8 +309,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
 
       {/* Sidebar */}
       <Drawer
-        variant="persistent"
-        open={drawerOpen}
+        variant="permanent"
         sx={{
           width: DRAWER_WIDTH,
           flexShrink: 0,
@@ -590,7 +572,6 @@ export default function SideNavbar({ children }: SideNavbarProps) {
         sx={{
           flexGrow: 1,
           mt: '64px',
-          transition: 'margin-left 0.3s ease',
           bgcolor: '#FFFFFF',
           minHeight: 'calc(100vh - 64px)',
         }}

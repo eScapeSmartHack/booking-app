@@ -233,7 +233,7 @@ export default function BookingGridPage() {
       {/* Header Section */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
         <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-          Booking Grid
+          Team Bookings
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
@@ -255,9 +255,6 @@ export default function BookingGridPage() {
               },
             }}
           />
-          <Typography variant="body2" sx={{ color: '#666', whiteSpace: 'nowrap' }}>
-            {formatTime()} {formatDateHeader()}
-          </Typography>
         </Box>
       </Box>
 
@@ -276,7 +273,7 @@ export default function BookingGridPage() {
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', position: 'sticky', left: 0, zIndex: 3, bgcolor: '#f5f5f5', minWidth: 200 }}>
+                  <TableCell sx={{ fontWeight: 'bold', position: 'sticky', left: 0, zIndex: 3, bgcolor: '#f5f5f5', minWidth: 140 }}>
                     User
                   </TableCell>
                   {daysData.map((day, index) => {
@@ -289,7 +286,7 @@ export default function BookingGridPage() {
                           fontWeight: 'bold',
                           borderLeft: '1px solid #e0e0e0',
                           borderBottom: isToday ? '2px solid #2563eb' : '1px solid #e0e0e0',
-                          minWidth: 150,
+                          minWidth: 120,
                         }}
                       >
                         <Box>
@@ -385,7 +382,7 @@ export default function BookingGridPage() {
                             ) : (
                               <Chip
                                 icon={<HomeIcon sx={{ color: '#666 !important' }} />}
-                                label="Working Remote"
+                                label="Remote"
                                 size="small"
                                 sx={{
                                   bgcolor: '#e5e7eb',

@@ -152,6 +152,55 @@ function BookingPageContent() {
       const finalEndTime = endTime || '18:00';
       const finalUserName = userName || 'You';
 
+      // Get the desk being booked to check if it's a desk type
+      const deskToBook = desks.find(d => d.id === deskId);
+      const isDeskType = deskToBook && (deskToBook.type === 'desk' || !deskToBook.type);
+
+      // Check if user already has a desk booking for this date (only for desk types, not meeting rooms)
+      if (isDeskType) {
+        const userStr = localStorage.getItem('user');
+        let currentUserId: number | null = null;
+        
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            currentUserId = user.id;
+          } catch (e) {
+            console.error('Failed to parse user data:', e);
+          }
+        }
+
+        if (currentUserId) {
+          // Get all bookings for this date
+          try {
+            const bookingsResponse = await apiService.getBookingsByDate(date);
+            
+            // Check if user already has a desk booking
+            const userHasDeskBooking = bookingsResponse.users.some((userBooking: any) => {
+              if (userBooking.user_id !== currentUserId) return false;
+              
+              // Check if any of their bookings are for desks (not meeting rooms)
+              return userBooking.bookings.some((booking: any) => {
+                const room = desks.find(d => d.id === booking.id_room);
+                return room && (room.type === 'desk' || !room.type);
+              });
+            });
+
+            if (userHasDeskBooking) {
+              alert('You already have a desk booking for this date. You can only book one desk per day.');
+              return;
+            }
+          } catch (error: any) {
+            // If it's our validation error, re-throw it
+            if (error.message === 'User already has a desk booking for this date') {
+              throw error;
+            }
+            // Otherwise, log but continue (maybe the check failed due to network)
+            console.warn('Failed to check existing bookings:', error);
+          }
+        }
+      }
+
       // Transform and create booking via backend API
       const bookingData = await apiService.transformBookingToBackend(
         deskId,
@@ -213,7 +262,7 @@ function BookingPageContent() {
 
   const availableDesks = desks.filter(d => d.status === 'available').length;
   
-  // Calculate user's bookings from the desks displayed on the map
+  // Calculate user's bookings from all spaces (desks, meeting rooms, recreational)
   const myBookings = (() => {
     // Get logged-in user from localStorage
     if (typeof window === 'undefined') return 0;
@@ -225,7 +274,7 @@ function BookingPageContent() {
       const user = JSON.parse(userStr);
       if (!user || !user.name) return 0;
 
-      // Count desks that are booked by the current user
+      // Count all spaces (desks, meeting rooms, recreational) that are booked by the current user
       // The desks are already filtered by selectedDate, so this counts bookings for the selected date
       return desks.filter(d => 
         d.status === 'booked' && 
@@ -456,6 +505,7 @@ function BookingPageContent() {
           desk={selectedDeskForModal}
           onClose={() => setSelectedDeskForModal(null)}
           onBook={handleBookDesk}
+          defaultDate={selectedDate}
         />
       )}
 

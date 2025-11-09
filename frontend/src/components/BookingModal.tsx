@@ -31,12 +31,14 @@ interface BookingModalProps {
   desk: Desk | null;
   onClose: () => void;
   onBook: (deskId: number, date: string, startTime?: string, endTime?: string, duration?: number, userName?: string, participants?: string[]) => void;
+  defaultDate?: string;
 }
 
 const DURATION_OPTIONS: BookingDuration[] = [30, 60, 90, 120, 150, 180, 210, 240];
 
-export default function BookingModal({ desk, onClose, onBook }: BookingModalProps) {
+export default function BookingModal({ desk, onClose, onBook, defaultDate }: BookingModalProps) {
   const [selectedDate, setSelectedDate] = useState(() => {
+    if (defaultDate) return defaultDate;
     const today = new Date();
     return today.toISOString().split('T')[0];
   });

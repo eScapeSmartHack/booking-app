@@ -39,7 +39,7 @@ interface RewardItem {
 }
 
 export default function ManagePointsPage() {
-  const [userPoints] = useState(850);
+  const [userPoints, setUserPoints] = useState(300);
   const [selectedReward, setSelectedReward] = useState<RewardItem | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
@@ -132,6 +132,10 @@ export default function ManagePointsPage() {
   };
 
   const confirmClaim = () => {
+    if (selectedReward) {
+      // Deduct points from user
+      setUserPoints(prevPoints => prevPoints - selectedReward.points);
+    }
     setSelectedReward(null);
     setShowSuccessDialog(true);
   };
