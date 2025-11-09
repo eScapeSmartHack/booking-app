@@ -12,6 +12,7 @@ class Booking(BaseModel):
     date: str  # Format: YYYY-MM-DD
     start: str  # Ora de început (ex: "09:00")
     end: str    # Ora de sfârșit (ex: "17:00")
+    status: Optional[str] = "active"  # "pending", "approved", "rejected", or "active"
 
 class UpdateBooking(BaseModel):
     date: str  # Format: YYYY-MM-DD

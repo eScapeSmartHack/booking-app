@@ -32,7 +32,8 @@ class DatabaseService:
             'id_room': id_room,
             'date': date,
             'start': start,
-            'end': end
+            'end': end,
+            'status': booking_data.get('status', 'active')  # Default to 'active' if not specified
         }
         
         booking = await prisma.book.create(data=mapped_data)
@@ -60,6 +61,8 @@ class DatabaseService:
                 mapped_data['end'] = value
             elif key == 'date':
                 mapped_data['date'] = value
+            elif key == 'status':
+                mapped_data['status'] = value
             else:
                 mapped_data[key] = value
             
@@ -215,13 +218,15 @@ class DatabaseService:
     
     async def update_user_settings(self, user_id: int, update_data: Dict[str, Any]) -> Optional[User]:
         """
-        Update user settings (name, password, etc.)
+        Update user settings (name, password, mood, etc.)
         """
         mapped_data = {}
         if 'name' in update_data:
             mapped_data['name'] = update_data['name']
         if 'password' in update_data:
             mapped_data['password'] = update_data['password']
+        if 'mood' in update_data:
+            mapped_data['mood'] = update_data['mood']
         
         if not mapped_data:
             return None

@@ -195,6 +195,40 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
     }
   };
 
+  const getMoodEmoji = (mood: string): string => {
+    switch (mood) {
+      case 'happy':
+        return '😊';
+      case 'sad':
+        return '😢';
+      case 'stressed':
+        return '😰';
+      case 'tired':
+        return '😴';
+      case 'focused':
+        return '🎯';
+      default:
+        return '😊';
+    }
+  };
+
+  const getMoodLabel = (mood: string): string => {
+    switch (mood) {
+      case 'happy':
+        return 'Happy';
+      case 'sad':
+        return 'Sad';
+      case 'stressed':
+        return 'Stressed';
+      case 'tired':
+        return 'Tired';
+      case 'focused':
+        return 'Focused';
+      default:
+        return 'Happy';
+    }
+  };
+
   return (
     <Box
       data-desk-marker
@@ -303,9 +337,16 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
                 </Typography>
               )}
               {desk.bookedBy && (
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem', mt: 0.25 }}>
-                  Booked by: {desk.bookedBy}
-                </Typography>
+                <>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem', mt: 0.25 }}>
+                    Booked by: {desk.bookedBy}
+                  </Typography>
+                  {desk.bookedByMood && (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem', mt: 0.25, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      Mood: {getMoodEmoji(desk.bookedByMood)} {getMoodLabel(desk.bookedByMood)}
+                    </Typography>
+                  )}
+                </>
               )}
               {desk.attributes && desk.attributes.length > 0 && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.25, mt: 0.5 }}>

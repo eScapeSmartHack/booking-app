@@ -226,9 +226,9 @@ class ApiService {
 
   /**
    * PUT /users/settings/{user_id}
-   * Update user settings (name, password)
+   * Update user settings (name, password, mood)
    */
-  async updateUserSettings(userId: number, settings: { name?: string; password?: string }): Promise<{ success: boolean; message: string; user: any }> {
+  async updateUserSettings(userId: number, settings: { name?: string; password?: string; mood?: string }): Promise<{ success: boolean; message: string; user: any }> {
     const response = await this.fetchWithErrorHandling<{ success: boolean; message: string; user: any }>(
       `${API_BASE_URL}/users/settings/${userId}`,
       {
@@ -247,8 +247,8 @@ class ApiService {
    * Create a new booking in backend
    * Backend expects: { id_room, id_user, date: "YYYY-MM-DD", start: "HH:MM", end: "HH:MM" }
    */
-  async createBooking(booking: { id_room: number; id_user: number; date: string; start: string; end: string }): Promise<{ message: string; booking: any }> {
-    const response = await this.fetchWithErrorHandling<{ message: string; booking: any }>(
+  async createBooking(booking: { id_room: number; id_user: number; date: string; start: string; end: string }): Promise<{ message: string; booking: any; status?: string }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; booking: any; status?: string }>(
       `${API_BASE_URL}/bookings/booking`,
       {
         method: 'POST',
@@ -282,6 +282,45 @@ class ApiService {
       `${API_BASE_URL}/bookings/booking/${bookingId}`,
       {
         method: 'DELETE',
+      }
+    );
+    return response;
+  }
+
+  /**
+   * GET /bookings/pending
+   * Get all pending bookings that require manager approval
+   */
+  async getPendingBookings(): Promise<{ message: string; bookings: any[] }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; bookings: any[] }>(
+      `${API_BASE_URL}/bookings/pending`
+    );
+    return response;
+  }
+
+  /**
+   * PUT /bookings/booking/{booking_id}/approve
+   * Approve a pending booking
+   */
+  async approveBooking(bookingId: number): Promise<{ message: string; booking: any }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; booking: any }>(
+      `${API_BASE_URL}/bookings/booking/${bookingId}/approve`,
+      {
+        method: 'PUT',
+      }
+    );
+    return response;
+  }
+
+  /**
+   * PUT /bookings/booking/{booking_id}/reject
+   * Reject a pending booking
+   */
+  async rejectBooking(bookingId: number): Promise<{ message: string; booking: any }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; booking: any }>(
+      `${API_BASE_URL}/bookings/booking/${bookingId}/reject`,
+      {
+        method: 'PUT',
       }
     );
     return response;
@@ -353,7 +392,12 @@ class ApiService {
       const desk: Desk = JSON.parse(room.data);
       
       // Find bookings for this room (already filtered by date if filterDate was provided)
-      const roomBookings = filteredBookings.filter(b => b.id_room === room.id);
+      // Only show approved or active bookings (filter out pending and rejected)
+      const roomBookings = filteredBookings.filter(b => {
+        if (b.id_room !== room.id) return false;
+        const status = b.status || 'active';
+        return status === 'approved' || status === 'active';
+      });
       
       if (roomBookings.length > 0) {
         // For meeting rooms and recreational spaces, use bookings array
@@ -390,6 +434,8 @@ class ApiService {
           // Get avatar from user - ensure it's not empty string
           const avatar = user?.avatar || '';
           desk.bookedByAvatar = (avatar && avatar.trim() !== '') ? avatar : undefined;
+          // Get mood from user
+          desk.bookedByMood = user?.mood || 'happy';
           desk.bookedDate = date;
           desk.bookedStartTime = startTime;
           desk.bookedEndTime = endTime;
@@ -402,6 +448,7 @@ class ApiService {
           desk.status = 'available';
           desk.bookedBy = undefined;
           desk.bookedByAvatar = undefined;
+          desk.bookedByMood = undefined;
           desk.bookedDate = undefined;
           desk.bookedStartTime = undefined;
           desk.bookedEndTime = undefined;

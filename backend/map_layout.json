@@ -2505,6 +2505,7 @@
     "floor": "4",
     "type": "meeting-room",
     "capacity": 18,
+    "escalation": true,
     "bookings": []
   },
   {
@@ -2517,6 +2518,7 @@
     "floor": "4",
     "type": "meeting-room",
     "capacity": 18,
+    "escalation": true,
     "bookings": []
   },
   {
@@ -2565,6 +2567,7 @@
     "floor": "4",
     "type": "recreational",
     "id": 232,
+    "escalation": true,
     "bookings": []
   }
 ]

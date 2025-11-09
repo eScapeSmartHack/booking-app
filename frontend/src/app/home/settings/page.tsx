@@ -11,16 +11,22 @@ import {
   CircularProgress,
   Divider,
   Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
+import MoodIcon from '@mui/icons-material/Mood';
 import { apiService } from '@/services/api';
 
 export default function SettingsPage() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [mood, setMood] = useState<string>('happy');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +42,7 @@ export default function SettingsPage() {
           const user = JSON.parse(userStr);
           setName(user.name || '');
           setUserId(user.id || null);
+          setMood(user.mood || 'happy');
         } catch (error) {
           console.error('Failed to parse user data:', error);
         }
@@ -72,12 +79,15 @@ export default function SettingsPage() {
 
     try {
       // Update user settings
-      const updateData: { name?: string; password?: string } = {};
+      const updateData: { name?: string; password?: string; mood?: string } = {};
       if (name.trim()) {
         updateData.name = name.trim();
       }
       if (password) {
         updateData.password = password;
+      }
+      if (mood) {
+        updateData.mood = mood;
       }
 
       const response = await apiService.updateUserSettings(userId, updateData);
@@ -88,9 +98,12 @@ export default function SettingsPage() {
         try {
           const user = JSON.parse(userStr);
           user.name = name.trim();
-          // Preserve type from response if available
+          // Preserve type and mood from response if available
           if (response.user && response.user.type) {
             user.type = response.user.type;
+          }
+          if (response.user && response.user.mood) {
+            user.mood = response.user.mood;
           }
           localStorage.setItem('user', JSON.stringify(user));
         } catch (error) {
@@ -159,6 +172,47 @@ export default function SettingsPage() {
                 },
               }}
             />
+          </Box>
+
+          <Divider sx={{ borderColor: '#bfdbfe' }} />
+
+          {/* Mood Section */}
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <MoodIcon sx={{ color: '#1e40af', mr: 1 }} />
+              <Typography variant="h6" sx={{ color: '#1e40af', fontWeight: 600 }}>
+                Current Mood
+              </Typography>
+            </Box>
+            <FormControl fullWidth>
+              <InputLabel id="mood-select-label">Mood</InputLabel>
+              <Select
+                labelId="mood-select-label"
+                id="mood-select"
+                value={mood}
+                label="Mood"
+                onChange={(e) => setMood(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&:hover fieldset': {
+                      borderColor: '#bfdbfe',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#1e40af',
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="happy">😊 Happy</MenuItem>
+                <MenuItem value="sad">😢 Sad</MenuItem>
+                <MenuItem value="stressed">😰 Stressed</MenuItem>
+                <MenuItem value="tired">😴 Tired</MenuItem>
+                <MenuItem value="focused">🎯 Focused</MenuItem>
+              </Select>
+            </FormControl>
+            <Typography variant="caption" sx={{ color: 'rgba(0, 0, 0, 0.6)', mt: 1, display: 'block' }}>
+              Your mood will be visible to colleagues when they hover over your booked desk
+            </Typography>
           </Box>
 
           <Divider sx={{ borderColor: '#bfdbfe' }} />

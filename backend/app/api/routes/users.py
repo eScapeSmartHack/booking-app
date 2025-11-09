@@ -24,6 +24,7 @@ class UpdateAvatarRequest(BaseModel):
 class UpdateUserSettingsRequest(BaseModel):
     name: Optional[str] = None
     password: Optional[str] = None
+    mood: Optional[str] = None
 
 class UpdateAvatarResponse(BaseModel):
     success: bool
@@ -65,7 +66,8 @@ async def login(login_data: LoginRequest):
         "id": user.id,
         "name": user.name,
         "avatar": user.avatar,
-        "type": getattr(user, 'type', 'EMPLOYEE')  # Default to EMPLOYEE if type doesn't exist
+        "type": getattr(user, 'type', 'EMPLOYEE'),  # Default to EMPLOYEE if type doesn't exist
+        "mood": getattr(user, 'mood', 'happy')  # Default to 'happy' if mood doesn't exist
     }
     
     return {
@@ -124,6 +126,11 @@ async def update_user_settings(user_id: int, settings_data: UpdateUserSettingsRe
         if len(settings_data.password) < 3:
             raise HTTPException(status_code=400, detail="Password must be at least 3 characters long")
         update_data['password'] = settings_data.password
+    if settings_data.mood is not None:
+        valid_moods = ['happy', 'sad', 'stressed', 'tired', 'focused']
+        if settings_data.mood not in valid_moods:
+            raise HTTPException(status_code=400, detail=f"Invalid mood. Must be one of: {', '.join(valid_moods)}")
+        update_data['mood'] = settings_data.mood
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
@@ -139,7 +146,8 @@ async def update_user_settings(user_id: int, settings_data: UpdateUserSettingsRe
         "id": updated_user.id,
         "name": updated_user.name,
         "avatar": updated_user.avatar,
-        "type": getattr(updated_user, 'type', 'EMPLOYEE')  # Default to EMPLOYEE if type doesn't exist
+        "type": getattr(updated_user, 'type', 'EMPLOYEE'),  # Default to EMPLOYEE if type doesn't exist
+        "mood": getattr(updated_user, 'mood', 'happy')  # Default to 'happy' if mood doesn't exist
     }
     
     return {

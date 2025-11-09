@@ -32,8 +32,10 @@ export interface Desk {
   floor: string;
   type?: SpaceType; // Optional, defaults to 'desk'
   attributes?: string[];
+  escalation?: boolean; // If true, requires manager approval for bookings
   bookedBy?: string;
   bookedByAvatar?: string; // Avatar SVG of the user who booked this desk
+  bookedByMood?: string; // Mood of the user who booked this desk: "happy", "sad", "stressed", "tired", "focused"
   bookedDate?: string;
   bookedStartTime?: string; // HH:mm format
   bookedEndTime?: string; // HH:mm format

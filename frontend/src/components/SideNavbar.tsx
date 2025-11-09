@@ -33,6 +33,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import GroupsIcon from '@mui/icons-material/Groups';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
 
 const DRAWER_WIDTH = 290;
 
@@ -212,11 +213,11 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   const userSettingsSubmenu = [
     { id: 'General Settings', label: 'General Settings', path: '/home/settings', icon: <SettingsIcon /> },
     { id: 'Edit avatar', label: 'Edit avatar', path: '/avatar-builder', icon: <EditIcon /> },
-    { id: 'Manage Points', label: 'Manage Points', path: '/home/points', icon: <EmojiEventsIcon /> },
   ];
 
   const managementSubmenu: Array<{ id: string; label: string; path: string | null; icon: React.ReactNode }> = [
     { id: 'Planning Team Day', label: 'Planning Team Day', path: '/home/management/planning', icon: <GroupsIcon /> },
+    { id: 'Approvals', label: 'Approvals', path: '/home/management/approvals', icon: <PendingActionsIcon /> },
     { id: 'Office Statistics', label: 'Office Statistics', path: '/home/management/statistics', icon: <BarChartIcon /> },
   ];
 
@@ -526,6 +527,63 @@ export default function SideNavbar({ children }: SideNavbarProps) {
               ))}
             </List>
           )}
+
+          {/* Manage Points - Direct Button */}
+          <ListItem disablePadding>
+            <ListItemButton
+              selected={pathname === '/home/points'}
+              onClick={() => router.push('/home/points')}
+              sx={{
+                py: 1.5,
+                px: 3,
+                mb: 1,
+                mx: 2,
+                borderRadius: '8px',
+                transition: 'all 0.2s ease',
+                '&.Mui-selected': {
+                  bgcolor: '#eff6ff',
+                  borderLeft: '3px solid #1e40af',
+                  '&:hover': {
+                    bgcolor: '#eff6ff',
+                  },
+                  '& .MuiListItemIcon-root': {
+                    color: '#1e40af',
+                  },
+                  '& .MuiTypography-root': {
+                    color: '#1e40af',
+                    fontWeight: 600,
+                  },
+                },
+                '&:hover': {
+                  bgcolor: 'rgba(191, 219, 254, 0.06)',
+                  '& .MuiListItemIcon-root': {
+                    color: '#1e40af',
+                  },
+                  '& .MuiTypography-root': {
+                    color: '#1e40af',
+                  },
+                },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 40,
+                  color: pathname === '/home/points' ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                  transition: 'color 0.2s ease',
+                }}
+              >
+                <EmojiEventsIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary="Manage Points"
+                primaryTypographyProps={{
+                  fontSize: '15px',
+                  fontWeight: pathname === '/home/points' ? 600 : 500,
+                  color: pathname === '/home/points' ? '#1e40af' : '#000000',
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
 
           {/* User Settings Main Item */}
           <ListItem disablePadding>

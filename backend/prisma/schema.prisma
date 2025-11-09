@@ -19,6 +19,7 @@ model Book {
   date    String
   start   String
   end     String
+  status  String @default("active") // "pending", "approved", "rejected", or "active" (auto-approved)
 }
 
 model User {
@@ -27,4 +28,5 @@ model User {
   password String
   avatar   String
   type     String @default("EMPLOYEE")
+  mood     String @default("happy") // "happy", "sad", "stressed", "tired", "focused"
 }

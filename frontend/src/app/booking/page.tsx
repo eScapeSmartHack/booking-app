@@ -12,7 +12,11 @@ import {
   TextField,
   Alert,
   Chip,
+  Snackbar,
 } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import ErrorIcon from '@mui/icons-material/Error';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import EventIcon from '@mui/icons-material/Event';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -41,6 +45,15 @@ function BookingPageContent() {
     monitor: false,
     standing: false,
     window: false,
+  });
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'info' | 'warning' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
   });
 
   // Check for date parameter in URL on mount and when searchParams change
@@ -210,7 +223,22 @@ function BookingPageContent() {
         finalUserName
       );
 
-      await apiService.createBooking(bookingData);
+      const createResponse = await apiService.createBooking(bookingData);
+      
+      // Show message if booking is pending approval
+      if (createResponse.status === 'pending') {
+        setSnackbar({
+          open: true,
+          message: 'Your booking request has been submitted and is pending manager approval. You will be notified once it is approved.',
+          severity: 'info',
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: 'Booking created successfully!',
+          severity: 'success',
+        });
+      }
 
       // Reload data from backend to get updated bookings
       const [roomsResponse, bookingsResponse] = await Promise.all([
@@ -234,7 +262,11 @@ function BookingPageContent() {
       } else if (error instanceof TypeError && error.message.includes('fetch')) {
         errorMessage = 'Cannot connect to server. Please make sure the backend is running.';
       }
-      alert(errorMessage);
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
       throw error; // Re-throw to prevent modal from closing on error
     }
   };
@@ -508,6 +540,50 @@ function BookingPageContent() {
           defaultDate={selectedDate}
         />
       )}
+
+      {/* Snackbar Notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+          icon={
+            snackbar.severity === 'info' ? (
+              <PendingActionsIcon />
+            ) : snackbar.severity === 'success' ? (
+              <CheckCircleIcon />
+            ) : (
+              <ErrorIcon />
+            )
+          }
+          sx={{
+            width: '100%',
+            bgcolor:
+              snackbar.severity === 'info'
+                ? '#3b82f6'
+                : snackbar.severity === 'success'
+                ? '#10b981'
+                : '#ef4444',
+            color: '#FFFFFF',
+            '& .MuiAlert-icon': {
+              color: '#FFFFFF',
+            },
+            '& .MuiAlert-message': {
+              color: '#FFFFFF',
+              fontWeight: 500,
+            },
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            borderRadius: 2,
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       {/* Pending Desk Indicator */}
       {pendingDeskToAdd && (
