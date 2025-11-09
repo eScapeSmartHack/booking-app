@@ -56,6 +56,7 @@ export default function BookingGridPage() {
   const [userTeams, setUserTeams] = useState<number[]>([]); // Store team IDs the current user belongs to
   const [teamsLoaded, setTeamsLoaded] = useState(false); // Track if teams have been loaded
   const [showTeamMembersOnly, setShowTeamMembersOnly] = useState(true); // Filter toggle: true = team members only, false = everyone
+  const [userTeamNames, setUserTeamNames] = useState<Record<number, string[]>>({}); // Map of user ID to their team names
 
   useEffect(() => {
     const initialize = async () => {
@@ -94,18 +95,44 @@ export default function BookingGridPage() {
         return [];
       }
       
-      // Only load teams for employees (managers see all employees)
-      if (currentUser.type === 'EMPLOYEE') {
+      // Load teams for employees and managers
+      if (currentUser.type === 'EMPLOYEE' || currentUser.type === 'MANAGER') {
         const response = await apiService.getUserTeams(currentUser.id);
         const teamIds = (response.teams || []).map((team: any) => team.id);
         return teamIds;
       } else {
-        // Managers/admins don't need team filtering
+        // Admins don't need team filtering
         return [];
       }
     } catch (error) {
       console.error('[BookingGrid] Failed to load user teams:', error);
       return [];
+    }
+  };
+
+  const loadTeamNamesForUsers = async (usersList: any[]) => {
+    try {
+      // Get all teams
+      const allTeams = await apiService.getTeams();
+      
+      // Create a map of user ID to their team names
+      const userTeamNamesMap: Record<number, string[]> = {};
+      
+      usersList.forEach((user: any) => {
+        const userTeamsList: string[] = [];
+        allTeams.forEach((team: any) => {
+          const isMember = team.members.some((member: any) => member.userId === user.id);
+          if (isMember) {
+            userTeamsList.push(team.name);
+          }
+        });
+        userTeamNamesMap[user.id] = userTeamsList;
+      });
+      
+      setUserTeamNames(userTeamNamesMap);
+    } catch (error) {
+      console.error('[BookingGrid] Failed to load team names for users:', error);
+      setUserTeamNames({});
     }
   };
 
@@ -155,8 +182,36 @@ export default function BookingGridPage() {
           (u.type === 'EMPLOYEE' || u.type === 'MANAGER') && 
           teammateUserIds.has(u.id)
         );
+      } else if (currentUser.type === 'MANAGER') {
+        // For managers: check if they belong to any teams
+        const managerTeamsResponse = await apiService.getUserTeams(currentUser.id);
+        const managerTeamIds = (managerTeamsResponse.teams || []).map((team: any) => team.id);
+        
+        if (managerTeamIds.length > 0) {
+          // Manager is part of teams - show only teammates
+          const allTeams = await apiService.getTeams();
+          
+          // Get all user IDs that are in the same teams (both employees and managers)
+          const teammateUserIds = new Set<number>();
+          allTeams.forEach((team: any) => {
+            if (managerTeamIds.includes(team.id)) {
+              team.members.forEach((member: any) => {
+                teammateUserIds.add(member.userId);
+              });
+            }
+          });
+          
+          // Filter users to include only teammates (employees and managers in the same teams)
+          return filteredList.filter(u => 
+            (u.type === 'EMPLOYEE' || u.type === 'MANAGER') && 
+            teammateUserIds.has(u.id)
+          );
+        } else {
+          // Manager has no teams - show all employees and managers
+          return filteredList.filter(u => u.type === 'EMPLOYEE' || u.type === 'MANAGER');
+        }
       } else {
-        // For managers/admins: show all employees and managers (but still exclude admins)
+        // For admins: show all employees and managers (but still exclude admins)
         return filteredList.filter(u => u.type === 'EMPLOYEE' || u.type === 'MANAGER');
       }
     } catch (error) {
@@ -178,6 +233,9 @@ export default function BookingGridPage() {
       // Filter users based on team membership
       const filteredUsers = await filterUsersByTeam(usersResponse.users, teamsToUse);
       setAllUsers(filteredUsers);
+
+      // Load team names for all filtered users
+      await loadTeamNamesForUsers(filteredUsers);
 
       // Get all rooms to map room IDs to names
       const roomsResponse = await apiService.getRooms();
@@ -462,9 +520,17 @@ export default function BookingGridPage() {
                               </Typography>
                             )}
                           </Avatar>
-                          <Typography variant="body2" sx={{ fontWeight: isCurrentUser ? 600 : 500, color: isCurrentUser ? '#1e40af' : 'inherit' }}>
-                            {isCurrentUser ? 'You' : user.name}
-                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                            <Typography variant="body2" sx={{ fontWeight: isCurrentUser ? 600 : 500, color: isCurrentUser ? '#1e40af' : 'inherit' }}>
+                              {isCurrentUser ? 'You' : user.name}
+                            </Typography>
+                            {userTeamNames[user.id] && userTeamNames[user.id].length > 0 && (
+                              <Typography variant="caption" sx={{ color: '#666', display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+                                <GroupsIcon sx={{ fontSize: 12 }} />
+                                {userTeamNames[user.id].join(', ')}
+                              </Typography>
+                            )}
+                          </Box>
                         </Box>
                       </TableCell>
                       {daysData.map((day) => {
