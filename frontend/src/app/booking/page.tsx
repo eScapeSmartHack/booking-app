@@ -41,10 +41,14 @@ function BookingPageContent() {
     }
     return '2025-11-10';
   });
-  const [filters, setFilters] = useState({
-    monitor: false,
-    standing: false,
-    window: false,
+  const [typeFilters, setTypeFilters] = useState<{
+    desk: boolean;
+    'meeting-room': boolean;
+    recreational: boolean;
+  }>({
+    desk: true,
+    'meeting-room': true,
+    recreational: true,
   });
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -292,7 +296,14 @@ function BookingPageContent() {
     setPendingDeskToAdd(null);
   };
 
-  const availableDesks = desks.filter(d => d.status === 'available').length;
+  // Filter desks by type
+  const filteredDesks = desks.filter(desk => {
+    // Filter by type
+    const deskType = desk.type || 'desk';
+    return typeFilters[deskType as keyof typeof typeFilters];
+  });
+
+  const availableDesks = filteredDesks.filter(d => d.status === 'available').length;
   
   // Calculate user's bookings from all spaces (desks, meeting rooms, recreational)
   const myBookings = (() => {
@@ -308,7 +319,7 @@ function BookingPageContent() {
 
       // Count all spaces (desks, meeting rooms, recreational) that are booked by the current user
       // The desks are already filtered by selectedDate, so this counts bookings for the selected date
-      return desks.filter(d => 
+      return filteredDesks.filter(d => 
         d.status === 'booked' && 
         d.bookedBy === user.name &&
         d.bookedDate === selectedDate // Ensure it's for the selected date
@@ -436,7 +447,7 @@ function BookingPageContent() {
           </Box>
         </Box>
 
-        {/* Filters Row - Clean Design */}
+        {/* Type Filters */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#6b7280' }}>
             <FilterListIcon sx={{ fontSize: 16 }} />
@@ -445,50 +456,50 @@ function BookingPageContent() {
             </Typography>
           </Box>
           <Chip
-            label="Monitor"
+            label="Desk"
             size="small"
-            onClick={() => setFilters(prev => ({ ...prev, monitor: !prev.monitor }))}
+            onClick={() => setTypeFilters(prev => ({ ...prev, desk: !prev.desk }))}
             sx={{ 
               fontWeight: 600,
               fontSize: '0.75rem',
-              bgcolor: filters.monitor ? '#3b82f6' : 'white',
-              color: filters.monitor ? 'white' : '#4b5563',
+              bgcolor: typeFilters.desk ? '#10b981' : 'white',
+              color: typeFilters.desk ? 'white' : '#4b5563',
               border: '1px solid',
-              borderColor: filters.monitor ? '#3b82f6' : '#e5e7eb',
+              borderColor: typeFilters.desk ? '#10b981' : '#e5e7eb',
               '&:hover': {
-                bgcolor: filters.monitor ? '#2563eb' : '#f9fafb',
+                bgcolor: typeFilters.desk ? '#059669' : '#f9fafb',
               }
             }}
           />
           <Chip
-            label="Standing Desk"
+            label="Meeting Room"
             size="small"
-            onClick={() => setFilters(prev => ({ ...prev, standing: !prev.standing }))}
+            onClick={() => setTypeFilters(prev => ({ ...prev, 'meeting-room': !prev['meeting-room'] }))}
             sx={{ 
               fontWeight: 600,
               fontSize: '0.75rem',
-              bgcolor: filters.standing ? '#3b82f6' : 'white',
-              color: filters.standing ? 'white' : '#4b5563',
+              bgcolor: typeFilters['meeting-room'] ? '#10b981' : 'white',
+              color: typeFilters['meeting-room'] ? 'white' : '#4b5563',
               border: '1px solid',
-              borderColor: filters.standing ? '#3b82f6' : '#e5e7eb',
+              borderColor: typeFilters['meeting-room'] ? '#10b981' : '#e5e7eb',
               '&:hover': {
-                bgcolor: filters.standing ? '#2563eb' : '#f9fafb',
+                bgcolor: typeFilters['meeting-room'] ? '#059669' : '#f9fafb',
               }
             }}
           />
           <Chip
-            label="Near Window"
+            label="Recreational"
             size="small"
-            onClick={() => setFilters(prev => ({ ...prev, window: !prev.window }))}
+            onClick={() => setTypeFilters(prev => ({ ...prev, recreational: !prev.recreational }))}
             sx={{ 
               fontWeight: 600,
               fontSize: '0.75rem',
-              bgcolor: filters.window ? '#3b82f6' : 'white',
-              color: filters.window ? 'white' : '#4b5563',
+              bgcolor: typeFilters.recreational ? '#10b981' : 'white',
+              color: typeFilters.recreational ? 'white' : '#4b5563',
               border: '1px solid',
-              borderColor: filters.window ? '#3b82f6' : '#e5e7eb',
+              borderColor: typeFilters.recreational ? '#10b981' : '#e5e7eb',
               '&:hover': {
-                bgcolor: filters.window ? '#2563eb' : '#f9fafb',
+                bgcolor: typeFilters.recreational ? '#059669' : '#f9fafb',
               }
             }}
           />
@@ -500,7 +511,7 @@ function BookingPageContent() {
         {/* Floor Plan */}
         <Box sx={{ flex: 1, position: 'relative' }}>
           <FloorPlanMap
-            desks={desks}
+            desks={filteredDesks}
             onDeskClick={handleDeskClick}
             onMapClick={handleMapClick}
             isAdminMode={isAdminMode}
