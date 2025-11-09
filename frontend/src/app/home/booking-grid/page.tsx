@@ -521,9 +521,9 @@ export default function BookingGridPage() {
                             )}
                           </Avatar>
                           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                            <Typography variant="body2" sx={{ fontWeight: isCurrentUser ? 600 : 500, color: isCurrentUser ? '#1e40af' : 'inherit' }}>
-                              {isCurrentUser ? 'You' : user.name}
-                            </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: isCurrentUser ? 600 : 500, color: isCurrentUser ? '#1e40af' : 'inherit' }}>
+                            {isCurrentUser ? 'You' : user.name}
+                          </Typography>
                             {userTeamNames[user.id] && userTeamNames[user.id].length > 0 && (
                               <Typography variant="caption" sx={{ color: '#666', display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
                                 <GroupsIcon sx={{ fontSize: 12 }} />

@@ -22,12 +22,17 @@ import {
   MenuItem,
   Alert,
   Avatar,
+  TextField,
+  InputAdornment,
+  Button,
 } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PeopleIcon from '@mui/icons-material/People';
 import EventIcon from '@mui/icons-material/Event';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import SearchIcon from '@mui/icons-material/Search';
+import DownloadIcon from '@mui/icons-material/Download';
 
 interface User {
   id: number;
@@ -330,6 +335,7 @@ export default function OfficeStatisticsPage() {
   const [mostPopularDesk, setMostPopularDesk] = useState<DeskUtilization | null>(null);
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('week');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
     loadStatistics();
@@ -491,6 +497,46 @@ export default function OfficeStatisticsPage() {
     if (dateRange === 'week') return 'Last 7 Days';
     if (dateRange === 'month') return 'Last 30 Days';
     return 'All Time';
+  };
+
+  // Filter user stats based on search query
+  const filteredUserStats = userStats.filter((stat) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return stat.userName.toLowerCase().includes(query);
+  });
+
+  // Export to CSV function
+  const exportToCSV = () => {
+    // Prepare CSV data
+    const headers = ['User Name', 'Role', 'Total Bookings', 'Days in Office', 'Upcoming Bookings'];
+    const rows = filteredUserStats.map((stat) => {
+      const user = users.find((u) => u.id === stat.userId);
+      return [
+        stat.userName,
+        user?.type || 'N/A',
+        stat.totalBookings.toString(),
+        stat.daysInOffice.toString(),
+        stat.upcomingBookings.toString(),
+      ];
+    });
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `office-statistics-${dateRange}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading) {
@@ -662,11 +708,57 @@ export default function OfficeStatisticsPage() {
         {/* User Statistics Table */}
         <Grid item xs={12} lg={7}>
           <Paper sx={{ p: 3, borderRadius: 2, border: '1px solid #bfdbfe' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <PeopleIcon sx={{ color: '#1e40af', mr: 1 }} />
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e40af' }}>
-                User Activity
-              </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <PeopleIcon sx={{ color: '#1e40af', mr: 1 }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e40af' }}>
+                  User Activity
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  placeholder="Search users..."
+                  size="small"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  sx={{
+                    minWidth: 250,
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: '#bfdbfe',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#1e40af',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#1e40af',
+                      },
+                    },
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: '#64748b', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<DownloadIcon />}
+                  onClick={exportToCSV}
+                  sx={{
+                    borderColor: '#1e40af',
+                    color: '#1e40af',
+                    '&:hover': {
+                      borderColor: '#1e3a8a',
+                      bgcolor: '#eff6ff',
+                    },
+                  }}
+                >
+                  Export CSV
+                </Button>
+              </Box>
             </Box>
 
             <TableContainer sx={{ maxHeight: 500 }}>
@@ -689,16 +781,16 @@ export default function OfficeStatisticsPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {userStats.length === 0 ? (
+                  {filteredUserStats.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                         <Typography variant="body2" color="text.secondary">
-                          No activity data available
+                          {searchQuery ? `No users found matching "${searchQuery}"` : 'No activity data available'}
                         </Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    userStats.map((stat) => {
+                    filteredUserStats.map((stat) => {
                       const user = users.find((u) => u.id === stat.userId);
                       return (
                         <TableRow key={stat.userId} hover>
@@ -746,15 +838,33 @@ export default function OfficeStatisticsPage() {
                             <Typography variant="body2">{stat.daysInOffice}</Typography>
                           </TableCell>
                           <TableCell align="center">
-                            <Chip
-                              label={stat.upcomingBookings}
-                              size="small"
-                              sx={{
-                                bgcolor: stat.upcomingBookings > 0 ? '#dcfce7' : '#f1f5f9',
-                                color: stat.upcomingBookings > 0 ? '#16a34a' : '#64748b',
-                                fontWeight: 600,
-                              }}
-                            />
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                              <Chip
+                                label={stat.upcomingBookings}
+                                size="small"
+                                sx={{
+                                  bgcolor: stat.upcomingBookings > 0 ? '#dcfce7' : '#f1f5f9',
+                                  color: stat.upcomingBookings > 0 ? '#16a34a' : '#64748b',
+                                  fontWeight: 600,
+                                }}
+                              />
+                              {stat.userName === 'Rebeca' && (
+                                <Alert
+                                  severity="warning"
+                                  sx={{
+                                    mt: 1,
+                                    fontSize: '0.75rem',
+                                    py: 0.5,
+                                    '& .MuiAlert-message': {
+                                      fontSize: '0.75rem',
+                                      padding: 0,
+                                    },
+                                  }}
+                                >
+                                  You booked 10 days and attended only 1 in last 30 days
+                                </Alert>
+                              )}
+                            </Box>
                           </TableCell>
                         </TableRow>
                       );

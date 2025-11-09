@@ -14,6 +14,7 @@ import {
   Card,
   CardContent,
   Divider,
+  Alert,
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -42,6 +43,7 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userType, setUserType] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -71,6 +73,9 @@ export default function HomePage() {
         setLoading(false);
         return;
       }
+
+      // Store user type for alert display
+      setUserType(user.type || null);
 
       // Get user bookings from backend (next 2 weeks)
       const userBookingsResponse = await apiService.getUserBookings(user.id);
@@ -263,6 +268,28 @@ export default function HomePage() {
           {mounted ? formatTimeDate(currentTime) : 'Loading...'}
         </Typography>
       </Box>
+
+      {/* Alert for b_employee type */}
+      {userType === 'b_employee' && (
+        <Alert
+          severity="error"
+          sx={{
+            mb: 3,
+            bgcolor: '#fee2e2',
+            border: '1px solid #ef4444',
+            borderRadius: 2,
+            '& .MuiAlert-icon': {
+              color: '#dc2626',
+            },
+            '& .MuiAlert-message': {
+              color: '#991b1b',
+              fontWeight: 600,
+            },
+          }}
+        >
+          In the last 30 days, you booked 10 times and attended only 1 time
+        </Alert>
+      )}
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '7fr 5fr' }, gap: 3 }}>
         {/* Calendar Section */}

@@ -98,9 +98,9 @@ export default function BookingModal({ desk, onClose, onBook, defaultDate }: Boo
     });
   }
 
-  // Check if recreational space has any bookings (chat available to everyone)
+  // Chat is always available for recreational spaces
   const currentUserId = getCurrentUserId();
-  const chatAvailable = isRecreational && existingBookings.length > 0;
+  const chatAvailable = isRecreational;
 
   // Generate time slots for the selected date
   const dateObj = new Date(selectedDate);
@@ -269,7 +269,7 @@ export default function BookingModal({ desk, onClose, onBook, defaultDate }: Boo
             )}
 
             {/* Show chat availability indicator for recreational spaces */}
-            {isRecreational && chatAvailable && (
+            {isRecreational && (
               <Box sx={{ mt: 1, p: 1.5, bgcolor: '#e3f2fd', borderRadius: 1, border: 1, borderColor: '#90caf9' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <ChatIcon color="primary" fontSize="small" />
@@ -278,21 +278,7 @@ export default function BookingModal({ desk, onClose, onBook, defaultDate }: Boo
                   </Typography>
                 </Box>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                  Join the conversation! This recreational space has an active group chat.
-                </Typography>
-              </Box>
-            )}
-
-            {isRecreational && !chatAvailable && (
-              <Box sx={{ mt: 1, p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1, border: 1, borderColor: '#e0e0e0' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ChatIcon sx={{ color: '#757575' }} fontSize="small" />
-                  <Typography variant="body2" sx={{ color: '#757575' }} fontWeight="medium">
-                    💬 Chat will be available
-                  </Typography>
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                  Be the first to book this space and start a chat!
+                  Join the conversation! This recreational space has a group chat.
                 </Typography>
               </Box>
             )}
@@ -400,8 +386,8 @@ export default function BookingModal({ desk, onClose, onBook, defaultDate }: Boo
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        {/* Show chat button for recreational spaces with any bookings */}
-        {isRecreational && chatAvailable && (
+        {/* Show chat button for recreational spaces (always available) */}
+        {isRecreational && (
           <Button
             onClick={() => setChatOpen(true)}
             variant="outlined"
@@ -436,13 +422,13 @@ export default function BookingModal({ desk, onClose, onBook, defaultDate }: Boo
       </DialogActions>
 
       {/* Recreational Chat Modal */}
-      {isRecreational && chatOpen && chatAvailable && currentUserId && (
+      {isRecreational && chatOpen && currentUserId && (
         <RecreationalChat
           roomId={desk.id}
           roomName={desk.name}
           date={selectedDate}
-          startTime={existingBookings[0].startTime}
-          endTime={existingBookings[0].endTime}
+          startTime={existingBookings.length > 0 ? existingBookings[0].startTime : '09:00'}
+          endTime={existingBookings.length > 0 ? existingBookings[0].endTime : '18:00'}
           currentUserId={currentUserId}
           open={chatOpen}
           onClose={() => setChatOpen(false)}
