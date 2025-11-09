@@ -167,6 +167,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
                 color: '#1e40af',
                 letterSpacing: '-0.01em',
                 fontSize: '1.5rem',
+                marginLeft: '15px',
               }}
             >
               place.
