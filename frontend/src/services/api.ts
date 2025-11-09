@@ -242,6 +242,83 @@ class ApiService {
     return response;
   }
 
+  // Team management methods
+  async getTeams(): Promise<any[]> {
+    const response = await this.fetchWithErrorHandling<any[]>(
+      `${API_BASE_URL}/teams`
+    );
+    return response;
+  }
+
+  async createTeam(teamData: { name: string; description?: string }): Promise<{ message: string; team: any }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; team: any }>(
+      `${API_BASE_URL}/teams`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(teamData),
+      }
+    );
+    return response;
+  }
+
+  async updateTeam(teamId: number, teamData: { name?: string; description?: string }): Promise<{ message: string; team: any }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; team: any }>(
+      `${API_BASE_URL}/teams/${teamId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(teamData),
+      }
+    );
+    return response;
+  }
+
+  async deleteTeam(teamId: number): Promise<{ message: string }> {
+    const response = await this.fetchWithErrorHandling<{ message: string }>(
+      `${API_BASE_URL}/teams/${teamId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+    return response;
+  }
+
+  async addTeamMember(userId: number, teamId: number): Promise<{ message: string; member: any }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; member: any }>(
+      `${API_BASE_URL}/teams/members`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, teamId }),
+      }
+    );
+    return response;
+  }
+
+  async removeTeamMember(memberId: number): Promise<{ message: string }> {
+    const response = await this.fetchWithErrorHandling<{ message: string }>(
+      `${API_BASE_URL}/teams/members/${memberId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+    return response;
+  }
+
+  async getUserTeams(userId: number): Promise<{ message: string; teams: any[] }> {
+    const response = await this.fetchWithErrorHandling<{ message: string; teams: any[] }>(
+      `${API_BASE_URL}/teams/user/${userId}`
+    );
+    return response;
+  }
+
   /**
    * POST /bookings/booking
    * Create a new booking in backend

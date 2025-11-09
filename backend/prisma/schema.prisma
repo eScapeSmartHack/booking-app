@@ -29,4 +29,22 @@ model User {
   avatar   String
   type     String @default("EMPLOYEE")
   mood     String @default("happy") // "happy", "sad", "stressed", "tired", "focused"
+  teamMemberships TeamMember[]
+}
+
+model Team {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String?
+  members     TeamMember[]
+}
+
+model TeamMember {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  teamId  Int
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team    Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
 }

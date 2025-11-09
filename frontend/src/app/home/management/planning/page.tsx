@@ -67,6 +67,9 @@ type BookingMode = 'single' | 'bulk';
 
 export default function PlanningTeamDayPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]); // Store all users
+  const [userTeams, setUserTeams] = useState<number[]>([]); // Store team IDs the current user belongs to
+  const [teamsLoaded, setTeamsLoaded] = useState(false); // Track if teams have been loaded
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [startTime, setStartTime] = useState<string>('09:00');
   const [endTime, setEndTime] = useState<string>('18:00');
@@ -82,10 +85,21 @@ export default function PlanningTeamDayPage() {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [selectedDesks, setSelectedDesks] = useState<number[]>([]);
 
-  // Load users on mount
+  // Load user teams first, then users
   useEffect(() => {
-    loadUsers();
+    const initialize = async () => {
+      await loadUserTeams();
+      setTeamsLoaded(true);
+    };
+    initialize();
   }, []);
+
+  // Reload users when userTeams change (for employees) or when teams are loaded
+  useEffect(() => {
+    if (teamsLoaded) {
+      loadUsers();
+    }
+  }, [userTeams, teamsLoaded]);
 
   // Load available desks when date/time changes
   useEffect(() => {
@@ -96,12 +110,102 @@ export default function PlanningTeamDayPage() {
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('http://localhost:8000/users');
-      const data = await response.json();
-      setUsers(data.users || []);
+      const response = await apiService.getUsers();
+      const allUsersData = response.users || [];
+      setAllUsers(allUsersData);
+      
+      // Always exclude admins
+      const usersWithoutAdmins = allUsersData.filter(u => u.type !== 'ADMIN');
+      
+      // Filter users based on team membership if user is an employee
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const currentUser = JSON.parse(userStr);
+          if (currentUser.type === 'EMPLOYEE') {
+            if (userTeams.length > 0) {
+              // For employees: only show users from the same teams (employees and managers)
+              const filteredUsers = await filterUsersByTeam(usersWithoutAdmins, userTeams);
+              setUsers(filteredUsers);
+            } else {
+              // Employee has no teams, show no employees
+              setUsers([]);
+            }
+          } else {
+            // For managers/admins: show all employees and managers (but exclude admins)
+            setUsers(usersWithoutAdmins.filter(u => u.type === 'EMPLOYEE' || u.type === 'MANAGER'));
+          }
+        } catch (error) {
+          console.error('Failed to parse user data:', error);
+          setUsers(usersWithoutAdmins.filter(u => u.type === 'EMPLOYEE' || u.type === 'MANAGER'));
+        }
+      } else {
+        setUsers(usersWithoutAdmins.filter(u => u.type === 'EMPLOYEE' || u.type === 'MANAGER'));
+      }
     } catch (error) {
       console.error('Failed to load users:', error);
       setErrorMessage('Failed to load users');
+    }
+  };
+
+  const loadUserTeams = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        setUserTeams([]);
+        return;
+      }
+      
+      const currentUser = JSON.parse(userStr);
+      if (!currentUser.id) {
+        setUserTeams([]);
+        return;
+      }
+      
+      // Only load teams for employees (managers see all employees)
+      if (currentUser.type === 'EMPLOYEE') {
+        const response = await apiService.getUserTeams(currentUser.id);
+        const teamIds = (response.teams || []).map((team: any) => team.id);
+        setUserTeams(teamIds);
+      } else {
+        // Managers/admins don't need team filtering
+        setUserTeams([]);
+      }
+    } catch (error) {
+      console.error('Failed to load user teams:', error);
+      setUserTeams([]);
+    }
+  };
+
+  const filterUsersByTeam = async (usersList: User[], teamIds: number[]): Promise<User[]> => {
+    if (teamIds.length === 0) {
+      // If user has no teams, show no employees
+      return [];
+    }
+    
+    try {
+      // Get all teams with their members
+      const allTeams = await apiService.getTeams();
+      
+      // Get all user IDs that are in the same teams (both employees and managers)
+      const teammateUserIds = new Set<number>();
+      allTeams.forEach((team: any) => {
+        if (teamIds.includes(team.id)) {
+          team.members.forEach((member: any) => {
+            teammateUserIds.add(member.userId);
+          });
+        }
+      });
+      
+      // Filter users to only include teammates (employees and managers in the same teams)
+      // This includes the current user since they are part of their own teams
+      return usersList.filter(u => 
+        (u.type === 'EMPLOYEE' || u.type === 'MANAGER') && 
+        teammateUserIds.has(u.id) // Only teammates from the same teams (includes current user)
+      );
+    } catch (error) {
+      console.error('Failed to filter users by team:', error);
+      return usersList.filter(u => u.type === 'EMPLOYEE' || u.type === 'MANAGER');
     }
   };
 

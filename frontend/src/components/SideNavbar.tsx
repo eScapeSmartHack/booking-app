@@ -217,6 +217,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
 
   const managementSubmenu: Array<{ id: string; label: string; path: string | null; icon: React.ReactNode }> = [
     { id: 'Planning Team Day', label: 'Planning Team Day', path: '/home/management/planning', icon: <GroupsIcon /> },
+    { id: 'Team Management', label: 'Team Management', path: '/home/management/teams', icon: <GroupsIcon /> },
     { id: 'Approvals', label: 'Approvals', path: '/home/management/approvals', icon: <PendingActionsIcon /> },
     { id: 'Office Statistics', label: 'Office Statistics', path: '/home/management/statistics', icon: <BarChartIcon /> },
   ];

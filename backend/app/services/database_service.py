@@ -237,4 +237,179 @@ class DatabaseService:
         )
         return user
 
+    # Team management methods
+    async def get_all_teams(self) -> List[Dict[str, Any]]:
+        """Get all teams with their members"""
+        teams = await prisma.team.find_many(include={'members': {'include': {'user': True}}})
+        result = []
+        for team in teams:
+            team_dict = {
+                'id': team.id,
+                'name': team.name,
+                'description': team.description,
+                'members': [
+                    {
+                        'id': member.id,
+                        'userId': member.userId,
+                        'teamId': member.teamId,
+                        'user': {
+                            'id': member.user.id,
+                            'name': member.user.name,
+                            'avatar': member.user.avatar,
+                            'type': getattr(member.user, 'type', 'EMPLOYEE'),
+                        }
+                    }
+                    for member in team.members
+                ]
+            }
+            result.append(team_dict)
+        return result
+
+    async def create_team(self, team_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new team"""
+        team = await prisma.team.create(
+            data={
+                'name': team_data['name'],
+                'description': team_data.get('description'),
+            }
+        )
+        return {
+            'id': team.id,
+            'name': team.name,
+            'description': team.description,
+            'members': []
+        }
+
+    async def update_team(self, team_id: int, team_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Update a team"""
+        update_data = {}
+        if 'name' in team_data:
+            update_data['name'] = team_data['name']
+        if 'description' in team_data:
+            update_data['description'] = team_data['description']
+        
+        if not update_data:
+            return None
+        
+        team = await prisma.team.update(
+            data=update_data,
+            where={'id': team_id}
+        )
+        if not team:
+            return None
+        
+        # Get members
+        members = await prisma.teammember.find_many(
+            where={'teamId': team_id},
+            include={'user': True}
+        )
+        
+        return {
+            'id': team.id,
+            'name': team.name,
+            'description': team.description,
+            'members': [
+                {
+                    'id': member.id,
+                    'userId': member.userId,
+                    'teamId': member.teamId,
+                    'user': {
+                        'id': member.user.id,
+                        'name': member.user.name,
+                        'avatar': member.user.avatar,
+                        'type': getattr(member.user, 'type', 'EMPLOYEE'),
+                    }
+                }
+                for member in members
+            ]
+        }
+
+    async def delete_team(self, team_id: int) -> bool:
+        """Delete a team (cascade deletes team members)"""
+        try:
+            await prisma.team.delete(where={'id': team_id})
+            return True
+        except Exception:
+            return False
+
+    async def add_team_member(self, user_id: int, team_id: int) -> Dict[str, Any]:
+        """Add a user to a team"""
+        # Check if user exists
+        user = await prisma.user.find_unique(where={'id': user_id})
+        if not user:
+            raise ValueError(f"User with id {user_id} not found")
+        
+        # Check if team exists
+        team = await prisma.team.find_unique(where={'id': team_id})
+        if not team:
+            raise ValueError(f"Team with id {team_id} not found")
+        
+        # Check if member already exists
+        existing = await prisma.teammember.find_first(
+            where={'userId': user_id, 'teamId': team_id}
+        )
+        if existing:
+            raise ValueError("User is already a member of this team")
+        
+        # Add member
+        member = await prisma.teammember.create(
+            data={'userId': user_id, 'teamId': team_id}
+        )
+        
+        return {
+            'id': member.id,
+            'userId': member.userId,
+            'teamId': member.teamId,
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'avatar': user.avatar,
+                'type': getattr(user, 'type', 'EMPLOYEE'),
+            }
+        }
+
+    async def remove_team_member(self, member_id: int) -> bool:
+        """Remove a user from a team"""
+        try:
+            await prisma.teammember.delete(where={'id': member_id})
+            return True
+        except Exception:
+            return False
+
+    async def get_team_members(self, team_id: int) -> List[Dict[str, Any]]:
+        """Get all members of a team"""
+        members = await prisma.teammember.find_many(
+            where={'teamId': team_id},
+            include={'user': True}
+        )
+        return [
+            {
+                'id': member.id,
+                'userId': member.userId,
+                'teamId': member.teamId,
+                'user': {
+                    'id': member.user.id,
+                    'name': member.user.name,
+                    'avatar': member.user.avatar,
+                    'type': getattr(member.user, 'type', 'EMPLOYEE'),
+                }
+            }
+            for member in members
+        ]
+
+    async def get_user_teams(self, user_id: int) -> List[Dict[str, Any]]:
+        """Get all teams that a user belongs to"""
+        team_members = await prisma.teammember.find_many(
+            where={'userId': user_id},
+            include={'team': True}
+        )
+        return [
+            {
+                'id': tm.team.id,
+                'name': tm.team.name,
+                'description': tm.team.description,
+            }
+            for tm in team_members
+        ]
+
 db_service = DatabaseService()
