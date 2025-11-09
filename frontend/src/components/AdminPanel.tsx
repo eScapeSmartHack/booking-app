@@ -30,7 +30,6 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
-import CircleIcon from '@mui/icons-material/Circle';
 
 interface AdminPanelProps {
   isAdminMode: boolean;
@@ -54,32 +53,26 @@ export default function AdminPanel({
   hideToggleButton = false,
 }: AdminPanelProps) {
   const [newDeskName, setNewDeskName] = useState('');
-  const [newDeskStatus, setNewDeskStatus] = useState<DeskStatus>('available');
   const [newDeskFloor, setNewDeskFloor] = useState('4');
   const [newDeskType, setNewDeskType] = useState<SpaceType>('desk');
-  const [newDeskAttributes, setNewDeskAttributes] = useState('');
+  const [newDeskCapacity, setNewDeskCapacity] = useState<number | undefined>(undefined);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importText, setImportText] = useState('');
 
   const handleAddDesk = () => {
     if (!newDeskName.trim()) return;
 
-    const attributes = newDeskAttributes
-      .split(',')
-      .map(a => a.trim())
-      .filter(a => a.length > 0);
-
     onAddDesk({
       name: newDeskName,
       position: { x: 50, y: 50 },
-      status: newDeskStatus,
+      status: 'available',
       floor: newDeskFloor,
       type: newDeskType,
-      attributes: attributes.length > 0 ? attributes : undefined,
+      capacity: newDeskCapacity,
     });
 
     setNewDeskName('');
-    setNewDeskAttributes('');
+    setNewDeskCapacity(undefined);
   };
 
   const handleImport = () => {
@@ -93,16 +86,6 @@ export default function AdminPanel({
     }
   };
 
-  const statusColors = [
-    { value: 'available', label: 'Available', color: 'success.main' },
-    { value: 'booked', label: 'Booked', color: 'primary.main' },
-    { value: 'colleague', label: 'Colleague', color: 'grey.400' },
-    { value: 'team-member', label: 'Team Member', color: 'warning.main' },
-    { value: 'closed', label: 'Closed', color: 'grey.600' },
-    { value: 'awaiting-cleaning', label: 'Awaiting Cleaning', color: 'secondary.main' },
-    { value: 'hidden', label: 'Hidden', color: 'grey.300' },
-    { value: 'fixed-space', label: 'Fixed Space', color: 'error.main' },
-  ];
 
   return (
     <Box sx={{ borderLeft: 1, borderColor: 'divider', p: 2, overflowY: 'auto', height: '100%' }}>
@@ -124,14 +107,14 @@ export default function AdminPanel({
 
       {isAdminMode && (
         <>
-          {/* Add New Desk Form */}
+          {/* Add New Place Form */}
           <Paper elevation={0} sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Add New Desk
+              Add New Place
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField
-                label="Desk Name"
+                label="Place Name"
                 value={newDeskName}
                 onChange={(e) => setNewDeskName(e.target.value)}
                 placeholder="e.g., 04.069"
@@ -153,7 +136,13 @@ export default function AdminPanel({
                 <Select
                   value={newDeskType}
                   label="Type"
-                  onChange={(e) => setNewDeskType(e.target.value as SpaceType)}
+                  onChange={(e) => {
+                    setNewDeskType(e.target.value as SpaceType);
+                    // Clear capacity when switching to desk type
+                    if (e.target.value === 'desk') {
+                      setNewDeskCapacity(undefined);
+                    }
+                  }}
                 >
                   <MenuItem value="desk">Desk</MenuItem>
                   <MenuItem value="meeting-room">Meeting Room</MenuItem>
@@ -161,33 +150,22 @@ export default function AdminPanel({
                 </Select>
               </FormControl>
 
-              <FormControl size="small" fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={newDeskStatus}
-                  label="Status"
-                  onChange={(e) => setNewDeskStatus(e.target.value as DeskStatus)}
-                >
-                  {statusColors.map((status) => (
-                    <MenuItem key={status.value} value={status.value}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CircleIcon sx={{ fontSize: 12, color: status.color }} />
-                        {status.label}
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <TextField
-                label="Attributes"
-                value={newDeskAttributes}
-                onChange={(e) => setNewDeskAttributes(e.target.value)}
-                placeholder="e.g., Monitor, Standing Desk"
-                size="small"
-                fullWidth
-                helperText="Comma-separated"
-              />
+              {newDeskType !== 'desk' && (
+                <TextField
+                  label="Capacity"
+                  type="number"
+                  value={newDeskCapacity || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNewDeskCapacity(value === '' ? undefined : parseInt(value, 10));
+                  }}
+                  placeholder="e.g., 10"
+                  size="small"
+                  fullWidth
+                  inputProps={{ min: 1 }}
+                  helperText="Number of people (optional)"
+                />
+              )}
 
               <Button
                 variant="contained"
@@ -195,17 +173,17 @@ export default function AdminPanel({
                 startIcon={<AddIcon />}
                 disabled={!newDeskName.trim()}
               >
-                Add Desk
+                Add Place
               </Button>
             </Box>
           </Paper>
 
-          {/* Selected Desk Info */}
+          {/* Selected Place Info */}
           {selectedDesk && (
             <Card sx={{ mb: 3, bgcolor: 'warning.light', borderColor: 'warning.main', border: 1 }}>
               <CardContent>
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Selected Desk
+                  Selected Place
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 2 }}>
                   <Typography variant="body2">
@@ -214,9 +192,11 @@ export default function AdminPanel({
                   <Typography variant="body2">
                     <strong>Position:</strong> X: {selectedDesk.position.x.toFixed(1)}%, Y: {selectedDesk.position.y.toFixed(1)}%
                   </Typography>
-                  <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                    <strong>Status:</strong> {selectedDesk.status}
-                  </Typography>
+                  {selectedDesk.capacity && (
+                    <Typography variant="body2">
+                      <strong>Capacity:</strong> {selectedDesk.capacity}
+                    </Typography>
+                  )}
                 </Box>
                 <Button
                   variant="contained"
@@ -225,7 +205,7 @@ export default function AdminPanel({
                   onClick={() => onDeleteDesk(selectedDesk.id)}
                   startIcon={<DeleteIcon />}
                 >
-                  Delete Desk
+                  Delete Place
                 </Button>
               </CardContent>
             </Card>
@@ -258,19 +238,19 @@ export default function AdminPanel({
             </Typography>
             <List dense>
               <ListItem sx={{ py: 0 }}>
-                <ListItemText primary="Click on map to place new desk" primaryTypographyProps={{ variant: 'body2' }} />
+                <ListItemText primary="Fill the form above and click 'Add Place', then click on map to place it" primaryTypographyProps={{ variant: 'body2' }} />
               </ListItem>
               <ListItem sx={{ py: 0 }}>
-                <ListItemText primary="Click existing desk to select it" primaryTypographyProps={{ variant: 'body2' }} />
+                <ListItemText primary="Click existing place to select and delete it" primaryTypographyProps={{ variant: 'body2' }} />
               </ListItem>
               <ListItem sx={{ py: 0 }}>
-                <ListItemText primary="Drag desks to reposition them" primaryTypographyProps={{ variant: 'body2' }} />
+                <ListItemText primary="Drag places to reposition them" primaryTypographyProps={{ variant: 'body2' }} />
               </ListItem>
               <ListItem sx={{ py: 0 }}>
-                <ListItemText primary="Export to save desk layout" primaryTypographyProps={{ variant: 'body2' }} />
+                <ListItemText primary="Click 'Save Changes' button in header to save to database" primaryTypographyProps={{ variant: 'body2' }} />
               </ListItem>
               <ListItem sx={{ py: 0 }}>
-                <ListItemText primary="Import to restore layout" primaryTypographyProps={{ variant: 'body2' }} />
+                <ListItemText primary="Export/Import for backup and restore" primaryTypographyProps={{ variant: 'body2' }} />
               </ListItem>
             </List>
           </Paper>
