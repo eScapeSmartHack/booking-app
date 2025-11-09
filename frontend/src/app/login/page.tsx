@@ -41,6 +41,9 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(response.user));
         localStorage.setItem('isAuthenticated', 'true');
         
+        // Dispatch event to notify other components (like navbar) that user data was updated
+        window.dispatchEvent(new Event('userUpdated'));
+        
         // Redirect to home
         router.push('/home');
       } else {

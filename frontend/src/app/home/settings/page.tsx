@@ -80,14 +80,18 @@ export default function SettingsPage() {
         updateData.password = password;
       }
 
-      await apiService.updateUserSettings(userId, updateData);
+      const response = await apiService.updateUserSettings(userId, updateData);
 
-      // Update localStorage with new name
+      // Update localStorage with new name and preserve type
       const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
           user.name = name.trim();
+          // Preserve type from response if available
+          if (response.user && response.user.type) {
+            user.type = response.user.type;
+          }
           localStorage.setItem('user', JSON.stringify(user));
         } catch (error) {
           console.error('Failed to update localStorage:', error);

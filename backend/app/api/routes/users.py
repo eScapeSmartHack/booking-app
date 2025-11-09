@@ -64,7 +64,8 @@ async def login(login_data: LoginRequest):
     user_data = {
         "id": user.id,
         "name": user.name,
-        "avatar": user.avatar
+        "avatar": user.avatar,
+        "type": getattr(user, 'type', 'EMPLOYEE')  # Default to EMPLOYEE if type doesn't exist
     }
     
     return {
@@ -93,7 +94,8 @@ async def update_avatar(avatar_data: UpdateAvatarRequest):
     user_data = {
         "id": updated_user.id,
         "name": updated_user.name,
-        "avatar": updated_user.avatar
+        "avatar": updated_user.avatar,
+        "type": getattr(updated_user, 'type', 'EMPLOYEE')  # Default to EMPLOYEE if type doesn't exist
     }
     
     return {
@@ -136,7 +138,8 @@ async def update_user_settings(user_id: int, settings_data: UpdateUserSettingsRe
     user_data = {
         "id": updated_user.id,
         "name": updated_user.name,
-        "avatar": updated_user.avatar
+        "avatar": updated_user.avatar,
+        "type": getattr(updated_user, 'type', 'EMPLOYEE')  # Default to EMPLOYEE if type doesn't exist
     }
     
     return {

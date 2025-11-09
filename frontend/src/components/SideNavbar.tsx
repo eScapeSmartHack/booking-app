@@ -29,6 +29,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import EditIcon from '@mui/icons-material/Edit';
 import LogoutIcon from '@mui/icons-material/Logout';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 
 const DRAWER_WIDTH = 290;
 
@@ -52,6 +53,8 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   const [userSettingsOpen, setUserSettingsOpen] = useState(
     pathname === '/avatar-builder' || pathname === '/home/settings' || pathname === '/home/points'
   );
+  const [managementOpen, setManagementOpen] = useState(false);
+  const [userType, setUserType] = useState<string | null>(null);
 
   const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -71,10 +74,31 @@ export default function SideNavbar({ children }: SideNavbarProps) {
       setAvatarSvg(savedAvatar);
     }
     
+    // Load user type from localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        const userTypeValue = user.type || null;
+        setUserType(userTypeValue);
+        console.log('Loaded user type from localStorage:', userTypeValue);
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+      }
+    }
+    
     // Listen for storage changes to update avatar when saved
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'userAvatarSvg' && e.newValue) {
         setAvatarSvg(e.newValue);
+      }
+      if (e.key === 'user' && e.newValue) {
+        try {
+          const user = JSON.parse(e.newValue);
+          setUserType(user.type || null);
+        } catch (error) {
+          console.error('Failed to parse user data:', error);
+        }
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -85,12 +109,37 @@ export default function SideNavbar({ children }: SideNavbarProps) {
       if (savedAvatar) {
         setAvatarSvg(savedAvatar);
       }
+      // Also update user type in case it changed
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          setUserType(user.type || null);
+        } catch (error) {
+          console.error('Failed to parse user data:', error);
+        }
+      }
     };
     window.addEventListener('avatarUpdated', handleAvatarUpdate);
+    
+    // Listen for user data updates (e.g., after login or settings update)
+    const handleUserUpdate = () => {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          setUserType(user.type || null);
+        } catch (error) {
+          console.error('Failed to parse user data:', error);
+        }
+      }
+    };
+    window.addEventListener('userUpdated', handleUserUpdate);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('avatarUpdated', handleAvatarUpdate);
+      window.removeEventListener('userUpdated', handleUserUpdate);
     };
   }, []);
 
@@ -113,6 +162,21 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     setUserSettingsOpen(
       pathname === '/avatar-builder' || pathname === '/home/settings' || pathname === '/home/points'
     );
+    // Update management open state based on pathname (add paths as needed)
+    // setManagementOpen(pathname?.includes('/management') || pathname === '/home/management');
+    
+    // Reload user type when pathname changes (in case user just logged in)
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        const userTypeValue = user.type || null;
+        setUserType(userTypeValue);
+        console.log('Reloaded user type on pathname change:', userTypeValue);
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+      }
+    }
   }, [pathname]);
 
   const formatTime = (date: Date) => {
@@ -139,6 +203,10 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     { id: 'General Settings', label: 'General Settings', path: '/home/settings', icon: <SettingsIcon /> },
     { id: 'Edit avatar', label: 'Edit avatar', path: '/avatar-builder', icon: <EditIcon /> },
     { id: 'Manage Points', label: 'Manage Points', path: '/home/points', icon: <EmojiEventsIcon /> },
+  ];
+
+  const managementSubmenu: Array<{ id: string; label: string; path: string | null; icon: React.ReactNode }> = [
+    // Add management submenu items here as needed
   ];
 
   const isSubItemSelected = (subItemPath: string) => {
@@ -563,6 +631,141 @@ export default function SideNavbar({ children }: SideNavbarProps) {
                 </ListItem>
               ))}
             </List>
+          )}
+
+          {/* Management Main Item - Only show for MANAGER or ADMIN */}
+          {(userType === 'MANAGER' || userType === 'ADMIN') && (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton
+              onClick={() => setManagementOpen(!managementOpen)}
+              sx={{
+                py: 1.5,
+                px: 3,
+                mb: 1,
+                mx: 2,
+                borderRadius: '8px',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: 'rgba(191, 219, 254, 0.06)',
+                  '& .MuiListItemIcon-root': {
+                    color: '#1e40af',
+                  },
+                  '& .MuiTypography-root': {
+                    color: '#1e40af',
+                  },
+                },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 40,
+                  color: managementOpen ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                  transition: 'color 0.2s ease',
+                }}
+              >
+                <DashboardIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary="Management"
+                primaryTypographyProps={{
+                  fontSize: '15px',
+                  fontWeight: managementOpen ? 600 : 500,
+                  color: managementOpen ? '#1e40af' : '#000000',
+                }}
+              />
+              <ExpandMoreIcon
+                sx={{
+                  fontSize: '20px',
+                  color: managementOpen ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                  transform: managementOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'all 0.2s ease',
+                }}
+              />
+                </ListItemButton>
+              </ListItem>
+
+              {/* Management Submenu */}
+              {managementOpen && (
+            <List sx={{ pl: 1, pr: 2 }}>
+              {managementSubmenu.length > 0 ? (
+                managementSubmenu.map((subItem) => (
+                  <ListItem key={subItem.id} disablePadding>
+                    <ListItemButton
+                      selected={subItem.path ? isSubItemSelected(subItem.path) : false}
+                      onClick={() => {
+                        if (subItem.path) {
+                          router.push(subItem.path);
+                        }
+                      }}
+                      sx={{
+                        py: 1.25,
+                        px: 3,
+                        ml: 3,
+                        mr: 2,
+                        borderRadius: '8px',
+                        mb: 0.5,
+                        transition: 'all 0.2s ease',
+                        '&.Mui-selected': {
+                          bgcolor: '#eff6ff',
+                          borderLeft: '3px solid #1e40af',
+                          '&:hover': {
+                            bgcolor: '#eff6ff',
+                            transform: 'translateX(2px)',
+                          },
+                          '& .MuiListItemIcon-root': {
+                            color: '#1e40af',
+                          },
+                          '& .MuiTypography-root': {
+                            color: '#1e40af',
+                            fontWeight: 600,
+                          },
+                        },
+                        '&:hover': {
+                          bgcolor: 'rgba(191, 219, 254, 0.08)',
+                          transform: 'translateX(4px)',
+                          '& .MuiListItemIcon-root': {
+                            color: '#1e40af',
+                          },
+                          '& .MuiTypography-root': {
+                            color: '#1e40af',
+                            fontWeight: 500,
+                          },
+                        },
+                      }}
+                    >
+                      <ListItemIcon
+                        sx={{
+                          minWidth: 36,
+                          color: subItem.path && isSubItemSelected(subItem.path) ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                          transition: 'color 0.2s ease',
+                        }}
+                      >
+                        {subItem.icon}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={subItem.label}
+                        primaryTypographyProps={{
+                          fontSize: '14px',
+                          fontWeight: subItem.path && isSubItemSelected(subItem.path) ? 600 : 400,
+                          color: subItem.path && isSubItemSelected(subItem.path) ? '#1e40af' : '#000000',
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))
+              ) : (
+                <ListItem disablePadding>
+                  <Box sx={{ px: 3, py: 1.5, ml: 3, mr: 2 }}>
+                    <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.5)', fontStyle: 'italic' }}>
+                      No items yet
+                    </Typography>
+                  </Box>
+                </ListItem>
+              )}
+              </List>
+              )}
+            </>
           )}
         </List>
       </Drawer>

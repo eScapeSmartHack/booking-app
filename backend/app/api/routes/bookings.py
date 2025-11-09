@@ -75,7 +75,8 @@ async def get_bookings():
             "user": {
                 "id": user.id,
                 "name": user.name,
-                "avatar": user.avatar
+                "avatar": user.avatar,
+                "type": getattr(user, 'type', 'EMPLOYEE')  # Default to EMPLOYEE if type doesn't exist
             } if user else None
         }
         enriched_bookings.append(booking_dict)

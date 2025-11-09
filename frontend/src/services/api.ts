@@ -30,6 +30,7 @@ interface BackendBooking {
     id: number;
     name: string;
     avatar: string;
+    type: string;
   } | null;
 }
 
@@ -38,6 +39,7 @@ interface BackendUser {
   name: string;
   password: string;
   avatar: string;
+  type: string;
 }
 
 interface LoginResponse {
@@ -47,6 +49,7 @@ interface LoginResponse {
     id: number;
     name: string;
     avatar: string;
+    type: string;
   } | null;
 }
 
@@ -57,6 +60,7 @@ interface UpdateAvatarResponse {
     id: number;
     name: string;
     avatar: string;
+    type: string;
   } | null;
 }
 
@@ -86,7 +90,7 @@ class ApiService {
       console.error('Failed to load users, using fallback:', error);
       // Fallback users
       this.users = [
-        { id: 1, name: 'You', password: '', avatar: '' },
+        { id: 1, name: 'You', password: '', avatar: '', type: 'EMPLOYEE' },
       ];
       this.usersLoaded = true;
     }
@@ -437,7 +441,7 @@ class MockApiService {
   private rooms: BackendRoom[] = [];
   private bookings: BackendBooking[] = [];
   private users: BackendUser[] = [
-    { id: 1, name: 'You', password: '', avatar: '' },
+    { id: 1, name: 'You', password: '', avatar: '', type: 'EMPLOYEE' },
   ];
 
   constructor() {

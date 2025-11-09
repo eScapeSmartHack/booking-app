@@ -26,4 +26,5 @@ model User {
   name     String
   password String
   avatar   String
+  type     String @default("EMPLOYEE")
 }

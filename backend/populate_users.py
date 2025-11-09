@@ -29,7 +29,8 @@ async def populate_users():
             users_to_create.append({
                 "name": f"employee_{i}",
                 "password": f"employee_{i}",
-                "avatar": ""
+                "avatar": "",
+                "type": "EMPLOYEE"
             })
         
         # 2 manageri
@@ -37,14 +38,16 @@ async def populate_users():
             users_to_create.append({
                 "name": f"manager_{i}",
                 "password": f"manager_{i}",
-                "avatar": ""
+                "avatar": "",
+                "type": "MANAGER"
             })
         
         # 1 admin
         users_to_create.append({
             "name": "admin_1",
             "password": "admin_1",
-            "avatar": ""
+            "avatar": "",
+            "type": "ADMIN"
         })
         
         print(f"Creez {len(users_to_create)} utilizatori...")
@@ -63,7 +66,7 @@ async def populate_users():
         
         print("\n👥 Lista completă de utilizatori:")
         for user in all_users:
-            print(f"  ID: {user.id}, Name: {user.name}, Password: {user.password}")
+            print(f"  ID: {user.id}, Name: {user.name}, Type: {user.type}, Password: {user.password}")
             
     except Exception as e:
         print(f"❌ Eroare: {e}")
