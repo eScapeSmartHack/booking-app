@@ -688,7 +688,11 @@ export default function AvatarBuilder() {
           icon={<CheckCircleIcon />}
           sx={{
             bgcolor: '#1e40af',
+            color: '#FFFFFF',
             '& .MuiAlert-icon': {
+              color: '#FFFFFF',
+            },
+            '& .MuiAlert-message': {
               color: '#FFFFFF',
             },
           }}

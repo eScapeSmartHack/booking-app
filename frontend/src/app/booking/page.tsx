@@ -35,8 +35,7 @@ function BookingPageContent() {
         return dateParam;
       }
     }
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return '2025-11-10';
   });
   const [filters, setFilters] = useState({
     monitor: false,

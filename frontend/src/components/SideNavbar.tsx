@@ -28,6 +28,7 @@ import MapIcon from '@mui/icons-material/Map';
 import SettingsIcon from '@mui/icons-material/Settings';
 import EditIcon from '@mui/icons-material/Edit';
 import LogoutIcon from '@mui/icons-material/Logout';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
 const DRAWER_WIDTH = 290;
 
@@ -50,7 +51,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     pathname?.includes('/home/booking-grid')
   );
   const [userSettingsOpen, setUserSettingsOpen] = useState(
-    pathname === '/avatar-builder' || pathname === '/home/settings'
+    pathname === '/avatar-builder' || pathname === '/home/settings' || pathname === '/home/points'
   );
 
   const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -111,7 +112,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     );
     // Update user settings open state based on pathname
     setUserSettingsOpen(
-      pathname === '/avatar-builder' || pathname === '/home/settings'
+      pathname === '/avatar-builder' || pathname === '/home/settings' || pathname === '/home/points'
     );
   }, [pathname]);
 
@@ -138,6 +139,7 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   const userSettingsSubmenu = [
     { id: 'General Settings', label: 'General Settings', path: '/home/settings', icon: <SettingsIcon /> },
     { id: 'Edit avatar', label: 'Edit avatar', path: '/avatar-builder', icon: <EditIcon /> },
+    { id: 'Manage Points', label: 'Manage Points', path: '/home/points', icon: <EmojiEventsIcon /> },
   ];
 
   const isSubItemSelected = (subItemPath: string) => {
