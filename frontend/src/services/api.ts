@@ -171,6 +171,27 @@ class ApiService {
   }
 
   /**
+   * POST /rooms/save
+   * Save all rooms (desks) to backend
+   */
+  async saveRooms(desks: Desk[]): Promise<{ message: string; created: number; updated: number; deleted: number }> {
+    // Transform desks to backend format
+    const rooms = desks.map(desk => ({
+      id: desk.id,
+      data: JSON.stringify(desk),
+    }));
+
+    const response = await this.fetchWithErrorHandling<{ message: string; created: number; updated: number; deleted: number }>(
+      `${API_BASE_URL}/rooms/save`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ rooms }),
+      }
+    );
+    return response;
+  }
+
+  /**
    * GET /bookings/booking
    * Get all bookings from backend
    */

@@ -81,6 +81,102 @@ class DatabaseService:
         
         return room
     
+    async def get_room_by_id(self, room_id: int) -> Optional[Room]:
+        room = await prisma.room.find_unique(
+            where={'id': room_id}
+        )
+        return room
+    
+    async def create_room(self, room_data: Dict[str, Any]) -> Room:
+        """
+        Create a new room.
+        room_data should contain: {'data': str} where data is JSON string
+        """
+        if 'data' not in room_data:
+            raise ValueError("Missing required field: data")
+        
+        room = await prisma.room.create(data={'data': room_data['data']})
+        return room
+    
+    async def update_room(self, room_id: int, room_data: Dict[str, Any]) -> Optional[Room]:
+        """
+        Update an existing room.
+        room_data should contain: {'data': str} where data is JSON string
+        """
+        if 'data' not in room_data:
+            raise ValueError("Missing required field: data")
+        
+        room = await prisma.room.update(
+            data={'data': room_data['data']},
+            where={'id': room_id}
+        )
+        return room
+    
+    async def delete_room(self, room_id: int) -> Optional[Room]:
+        """
+        Delete a room by ID.
+        """
+        room = await self.get_room_by_id(room_id=room_id)
+        if room:
+            await prisma.room.delete(where={'id': room_id})
+        return room
+    
+    async def save_rooms_bulk(self, rooms_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Bulk save rooms. This will:
+        - Create new rooms that don't exist
+        - Update existing rooms
+        - Delete rooms that are not in the provided list
+        
+        rooms_data should be a list of dicts with: {'id': int, 'data': str}
+        If id is None or doesn't exist in DB, a new room will be created.
+        """
+        # Get all existing rooms
+        existing_rooms = await self.get_all_rooms()
+        existing_room_ids = {room.id for room in existing_rooms}
+        
+        # Process each room
+        new_rooms = []
+        updated_rooms = []
+        rooms_to_keep = set()
+        
+        for room_data in rooms_data:
+            room_id = room_data.get('id')
+            room_json_data = room_data.get('data')
+            
+            if not room_json_data:
+                continue  # Skip rooms without data
+            
+            if room_id and room_id in existing_room_ids:
+                # Update existing room
+                updated_room = await self.update_room(room_id, {'data': room_json_data})
+                if updated_room:
+                    updated_rooms.append(updated_room)
+                    rooms_to_keep.add(room_id)
+            else:
+                # Create new room (id doesn't exist or is None)
+                new_room = await self.create_room({'data': room_json_data})
+                new_rooms.append(new_room)
+                if new_room.id:
+                    rooms_to_keep.add(new_room.id)
+        
+        # Delete rooms that are not in the provided list
+        rooms_to_delete = existing_room_ids - rooms_to_keep
+        deleted_rooms = []
+        for room_id in rooms_to_delete:
+            deleted_room = await self.delete_room(room_id)
+            if deleted_room:
+                deleted_rooms.append(deleted_room)
+        
+        return {
+            'created': len(new_rooms),
+            'updated': len(updated_rooms),
+            'deleted': len(deleted_rooms),
+            'new_rooms': new_rooms,
+            'updated_rooms': updated_rooms,
+            'deleted_rooms': deleted_rooms,
+        }
+    
     async def get_all_users(self) -> List[User]:
         user = await prisma.user.find_many()
         

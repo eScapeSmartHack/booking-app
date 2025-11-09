@@ -32,6 +32,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import GroupsIcon from '@mui/icons-material/Groups';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 const DRAWER_WIDTH = 290;
 
@@ -57,6 +58,9 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   );
   const [managementOpen, setManagementOpen] = useState(
     pathname?.includes('/home/management')
+  );
+  const [adminOpen, setAdminOpen] = useState(
+    pathname?.includes('/home/admin')
   );
   const [userType, setUserType] = useState<string | null>(null);
 
@@ -168,6 +172,8 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     );
     // Update management open state based on pathname
     setManagementOpen(pathname?.includes('/home/management'));
+    // Update admin open state based on pathname
+    setAdminOpen(pathname?.includes('/home/admin'));
     
     // Reload user type when pathname changes (in case user just logged in)
     const userStr = localStorage.getItem('user');
@@ -212,6 +218,10 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   const managementSubmenu: Array<{ id: string; label: string; path: string | null; icon: React.ReactNode }> = [
     { id: 'Planning Team Day', label: 'Planning Team Day', path: '/home/management/planning', icon: <GroupsIcon /> },
     { id: 'Office Statistics', label: 'Office Statistics', path: '/home/management/statistics', icon: <BarChartIcon /> },
+  ];
+
+  const adminSubmenu: Array<{ id: string; label: string; path: string | null; icon: React.ReactNode }> = [
+    { id: 'Map Editor', label: 'Map Editor', path: '/home/admin/map-editor', icon: <MapIcon /> },
   ];
 
   const isSubItemSelected = (subItemPath: string) => {
@@ -638,8 +648,8 @@ export default function SideNavbar({ children }: SideNavbarProps) {
             </List>
           )}
 
-          {/* Management Main Item - Only show for MANAGER or ADMIN */}
-          {(userType === 'MANAGER' || userType === 'ADMIN') && (
+          {/* Management Main Item - Only show for MANAGER (not ADMIN) */}
+          {userType === 'MANAGER' && (
             <>
               <ListItem disablePadding>
                 <ListItemButton
@@ -769,6 +779,131 @@ export default function SideNavbar({ children }: SideNavbarProps) {
                 </ListItem>
               )}
               </List>
+              )}
+            </>
+          )}
+
+          {/* Admin Main Item - Only show for ADMIN */}
+          {userType === 'ADMIN' && (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => setAdminOpen(!adminOpen)}
+                  sx={{
+                    py: 1.5,
+                    px: 3,
+                    mb: 1,
+                    mx: 2,
+                    borderRadius: '8px',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: 'rgba(191, 219, 254, 0.06)',
+                      '& .MuiListItemIcon-root': {
+                        color: '#1e40af',
+                      },
+                      '& .MuiTypography-root': {
+                        color: '#1e40af',
+                      },
+                    },
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 40,
+                      color: adminOpen ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                      transition: 'color 0.2s ease',
+                    }}
+                  >
+                    <AdminPanelSettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Admin"
+                    primaryTypographyProps={{
+                      fontSize: '15px',
+                      fontWeight: adminOpen ? 600 : 500,
+                      color: adminOpen ? '#1e40af' : '#000000',
+                    }}
+                  />
+                  <ExpandMoreIcon
+                    sx={{
+                      fontSize: '20px',
+                      color: adminOpen ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                      transform: adminOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+
+              {/* Admin Submenu */}
+              {adminOpen && (
+                <List sx={{ pl: 1, pr: 2 }}>
+                  {adminSubmenu.map((subItem) => (
+                    <ListItem key={subItem.id} disablePadding>
+                      <ListItemButton
+                        selected={subItem.path ? isSubItemSelected(subItem.path) : false}
+                        onClick={() => {
+                          if (subItem.path) {
+                            router.push(subItem.path);
+                          }
+                        }}
+                        sx={{
+                          py: 1.25,
+                          px: 3,
+                          ml: 3,
+                          mr: 2,
+                          borderRadius: '8px',
+                          mb: 0.5,
+                          transition: 'all 0.2s ease',
+                          '&.Mui-selected': {
+                            bgcolor: '#eff6ff',
+                            borderLeft: '3px solid #1e40af',
+                            '&:hover': {
+                              bgcolor: '#eff6ff',
+                              transform: 'translateX(2px)',
+                            },
+                            '& .MuiListItemIcon-root': {
+                              color: '#1e40af',
+                            },
+                            '& .MuiTypography-root': {
+                              color: '#1e40af',
+                              fontWeight: 600,
+                            },
+                          },
+                          '&:hover': {
+                            bgcolor: 'rgba(191, 219, 254, 0.08)',
+                            transform: 'translateX(4px)',
+                            '& .MuiListItemIcon-root': {
+                              color: '#1e40af',
+                            },
+                            '& .MuiTypography-root': {
+                              color: '#1e40af',
+                              fontWeight: 500,
+                            },
+                          },
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 36,
+                            color: subItem.path && isSubItemSelected(subItem.path) ? '#1e40af' : 'rgba(0, 0, 0, 0.6)',
+                            transition: 'color 0.2s ease',
+                          }}
+                        >
+                          {subItem.icon}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={subItem.label}
+                          primaryTypographyProps={{
+                            fontSize: '14px',
+                            fontWeight: subItem.path && isSubItemSelected(subItem.path) ? 600 : 400,
+                            color: subItem.path && isSubItemSelected(subItem.path) ? '#1e40af' : '#000000',
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
               )}
             </>
           )}

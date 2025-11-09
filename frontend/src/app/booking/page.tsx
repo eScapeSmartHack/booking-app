@@ -308,7 +308,7 @@ function BookingPageContent() {
               color: '#1a1a1a'
             }}
           >
-            Floorplan
+            Book a Place
           </Typography>
           <Typography 
             variant="body2" 
