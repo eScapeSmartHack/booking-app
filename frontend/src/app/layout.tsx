@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ThemeRegistry from '@/components/ThemeRegistry';
 
 export const metadata: Metadata = {
-  title: "FastAPI + Next.js App",
-  description: "Full-stack application with FastAPI and Next.js",
+  title: "Desk Booking App",
+  description: "Book your workspace with ease",
 };
 
 export default function RootLayout({
@@ -13,7 +14,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ThemeRegistry>
+          {children}
+        </ThemeRegistry>
+      </body>
     </html>
   );
 }

@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Room {
+  id   Int    @id @default(autoincrement())
+  data String
+}
+
+model Book {
+  id      Int    @id @default(autoincrement())
+  id_room Int
+  id_user Int
+  date    String
+  start   String
+  end     String
+  status  String @default("active") // "pending", "approved", "rejected", or "active" (auto-approved)
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  password String
+  avatar   String
+  type     String @default("EMPLOYEE")
+  mood     String @default("happy") // "happy", "sad", "stressed", "tired", "focused"
+  teamMemberships TeamMember[]
+}
+
+model Team {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String?
+  members     TeamMember[]
+}
+
+model TeamMember {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  teamId  Int
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team    Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+}
+
+model RecreationalChat {
+  id          Int       @id @default(autoincrement())
+  roomId      Int       // The recreational space ID
+  date        String    // Date of the booking (YYYY-MM-DD)
+  startTime   String    // Start time of the recreational booking
+  endTime     String    // End time of the recreational booking
+  createdAt   String    // ISO timestamp when chat was created
+  messages    Message[]
+}
+
+model Message {
+  id        Int              @id @default(autoincrement())
+  chatId    Int
+  userId    Int
+  content   String
+  timestamp String           // ISO timestamp
+  chat      RecreationalChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+}
