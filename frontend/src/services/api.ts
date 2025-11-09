@@ -319,6 +319,43 @@ class ApiService {
     return response;
   }
 
+  // Chat management methods
+  async createOrGetChat(roomId: number, date: string, startTime: string, endTime: string): Promise<{ chat: any; messages: any[] }> {
+    const response = await fetch(`${API_BASE_URL}/chats`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ roomId, date, startTime, endTime }),
+    });
+    if (!response.ok) throw new Error('Failed to create/get chat');
+    return await response.json();
+  }
+
+  async getChat(chatId: number): Promise<{ chat: any; messages: any[] }> {
+    const response = await fetch(`${API_BASE_URL}/chats/${chatId}`);
+    if (!response.ok) throw new Error('Failed to get chat');
+    return await response.json();
+  }
+
+  async sendMessage(chatId: number, userId: number, content: string): Promise<{ message: any }> {
+    const response = await fetch(`${API_BASE_URL}/chats/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ chatId, userId, content }),
+    });
+    if (!response.ok) throw new Error('Failed to send message');
+    return await response.json();
+  }
+
+  async getUserChats(userId: number): Promise<{ chats: any[] }> {
+    const response = await fetch(`${API_BASE_URL}/chats/users/${userId}/chats`);
+    if (!response.ok) throw new Error('Failed to get user chats');
+    return await response.json();
+  }
+
   /**
    * POST /bookings/booking
    * Create a new booking in backend

@@ -412,4 +412,64 @@ class DatabaseService:
             for tm in team_members
         ]
 
+    # Chat management methods
+    async def create_chat(self, chat_data: Dict[str, Any]):
+        """Create a new recreational chat"""
+        chat = await prisma.recreationalchat.create(
+            data={
+                'roomId': chat_data['roomId'],
+                'date': chat_data['date'],
+                'startTime': chat_data['startTime'],
+                'endTime': chat_data['endTime'],
+                'createdAt': chat_data['createdAt']
+            }
+        )
+        return chat
+
+    async def get_chat_by_id(self, chat_id: int):
+        """Get a chat by its ID"""
+        chat = await prisma.recreationalchat.find_unique(
+            where={'id': chat_id}
+        )
+        return chat
+
+    async def get_chat_by_room_and_time(self, room_id: int, date: str, start_time: str, end_time: str):
+        """Get a chat for a specific room, date, and time"""
+        chat = await prisma.recreationalchat.find_first(
+            where={
+                'roomId': room_id,
+                'date': date,
+                'startTime': start_time,
+                'endTime': end_time
+            }
+        )
+        return chat
+
+    async def get_chats_by_room(self, room_id: int):
+        """Get all chats for a specific room"""
+        chats = await prisma.recreationalchat.find_many(
+            where={'roomId': room_id}
+        )
+        return chats
+
+    async def create_message(self, message_data: Dict[str, Any]):
+        """Create a new message in a chat"""
+        message = await prisma.message.create(
+            data={
+                'chatId': message_data['chatId'],
+                'userId': message_data['userId'],
+                'content': message_data['content'],
+                'timestamp': message_data['timestamp']
+            }
+        )
+        return message
+
+    async def get_chat_messages(self, chat_id: int):
+        """Get all messages for a chat"""
+        messages = await prisma.message.find_many(
+            where={'chatId': chat_id},
+            order={'id': 'asc'}
+        )
+        return messages
+
 db_service = DatabaseService()

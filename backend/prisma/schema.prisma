@@ -48,3 +48,22 @@ model TeamMember {
 
   @@unique([userId, teamId])
 }
+
+model RecreationalChat {
+  id          Int       @id @default(autoincrement())
+  roomId      Int       // The recreational space ID
+  date        String    // Date of the booking (YYYY-MM-DD)
+  startTime   String    // Start time of the recreational booking
+  endTime     String    // End time of the recreational booking
+  createdAt   String    // ISO timestamp when chat was created
+  messages    Message[]
+}
+
+model Message {
+  id        Int              @id @default(autoincrement())
+  chatId    Int
+  userId    Int
+  content   String
+  timestamp String           // ISO timestamp
+  chat      RecreationalChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+}
