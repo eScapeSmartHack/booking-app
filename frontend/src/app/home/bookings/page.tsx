@@ -25,10 +25,14 @@ import {
   DialogActions,
   TextField,
   Alert,
+  Chip,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useRouter } from 'next/navigation';
 import { apiService } from '@/services/api';
 
@@ -39,7 +43,7 @@ interface Booking {
   from: string;
   to: string;
   location: string;
-  group: string;
+  status: string;
   bookedFor?: string;
   id_room?: number;
   date?: string;
@@ -87,12 +91,15 @@ export default function YourBookingsPage() {
         return;
       }
 
-      // Get user bookings from backend (next 2 weeks)
-      const userBookingsResponse = await apiService.getUserBookings(user.id);
+      // Get all bookings from backend (includes status)
+      const bookingsResponse = await apiService.getBookings();
       const roomsResponse = await apiService.getRooms();
 
+      // Filter to only current user's bookings
+      const userBookings = bookingsResponse.bookings.filter((b: any) => b.id_user === user.id);
+
       // Transform bookings to match table format
-      const transformedBookings: Booking[] = userBookingsResponse.bookings.map((booking: any) => {
+      const transformedBookings: Booking[] = userBookings.map((booking: any) => {
         const room = roomsResponse.rooms.find((r: any) => r.id === booking.id_room);
         const roomData = room ? JSON.parse(room.data) : null;
         
@@ -130,9 +137,9 @@ export default function YourBookingsPage() {
           type: typeDisplay,
           from: `${formattedDate} ${formattedTime}`,
           to: `${formattedDate} ${formattedEndTime}`,
-          location: '6L Iuliu Maniu Blvd, Floor 4',
-          group: '-',
-          bookedFor: userBookingsResponse.user_name || '-',
+          location: 'The Bridge 2, Str. Ghercu Constantin 1A',
+          status: booking.status || 'active',
+          bookedFor: booking.user?.name || user.name || '-',
           id_room: booking.id_room,
           date: booking.date,
           start: booking.start,
@@ -259,6 +266,71 @@ export default function YourBookingsPage() {
     }
   };
 
+  const getStatusChip = (status: string) => {
+    const statusLower = status.toLowerCase();
+    
+    if (statusLower === 'pending') {
+      return (
+        <Chip
+          icon={<PendingActionsIcon sx={{ fontSize: 16 }} />}
+          label="Pending"
+          size="small"
+          sx={{
+            bgcolor: '#fef3c7',
+            color: '#92400e',
+            fontWeight: 600,
+            border: '1px solid #f59e0b',
+            '& .MuiChip-icon': { color: '#92400e' },
+          }}
+        />
+      );
+    } else if (statusLower === 'approved' || statusLower === 'active') {
+      return (
+        <Chip
+          icon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
+          label={statusLower === 'active' ? 'Active' : 'Approved'}
+          size="small"
+          sx={{
+            bgcolor: '#d1fae5',
+            color: '#065f46',
+            fontWeight: 600,
+            border: '1px solid #10b981',
+            '& .MuiChip-icon': { color: '#065f46' },
+          }}
+        />
+      );
+    } else if (statusLower === 'rejected') {
+      return (
+        <Chip
+          icon={<CancelIcon sx={{ fontSize: 16 }} />}
+          label="Rejected"
+          size="small"
+          sx={{
+            bgcolor: '#fee2e2',
+            color: '#991b1b',
+            fontWeight: 600,
+            border: '1px solid #ef4444',
+            '& .MuiChip-icon': { color: '#991b1b' },
+          }}
+        />
+      );
+    } else {
+      // Default styling for unknown statuses
+      return (
+        <Chip
+          label={status}
+          size="small"
+          sx={{
+            bgcolor: '#e5e7eb',
+            color: '#374151',
+            fontWeight: 600,
+            border: '1px solid #d1d5db',
+          }}
+        />
+      );
+    }
+  };
+
   return (
     <Box sx={{ p: 4, bgcolor: '#ffffff', minHeight: '100vh' }}>
       <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
@@ -298,7 +370,7 @@ export default function YourBookingsPage() {
                 <TableCell sx={{ fontWeight: 'bold', py: 2 }}>From</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', py: 2 }}>To</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', py: 2 }}>Location</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', py: 2 }}>Group</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', py: 2 }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', py: 2 }}>Booked For</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', py: 2 }}>Actions</TableCell>
               </TableRow>
@@ -318,7 +390,9 @@ export default function YourBookingsPage() {
                     <TableCell>{booking.from}</TableCell>
                     <TableCell>{booking.to}</TableCell>
                     <TableCell>{booking.location}</TableCell>
-                    <TableCell>{booking.group}</TableCell>
+                    <TableCell>
+                      {getStatusChip(booking.status)}
+                    </TableCell>
                     <TableCell>{booking.bookedFor || '-'}</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>

@@ -438,7 +438,7 @@ function BookingPageContent() {
             <LocationOnIcon sx={{ color: '#3b82f6', fontSize: 18 }} />
             <Box>
               <Typography variant="body2" fontWeight="600" sx={{ color: '#1e40af', fontSize: '0.813rem' }}>
-                6L Iuliu Maniu Blvd, Floor 4
+                The Bridge 2, Str. Ghercu Constantin 1A
               </Typography>
               <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
                 Drop-Ins, Bucharest

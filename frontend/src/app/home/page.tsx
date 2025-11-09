@@ -501,7 +501,7 @@ export default function HomePage() {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <LocationOnIcon sx={{ fontSize: 16, color: '#1e40af' }} />
                           <Typography variant="body2" sx={{ color: '#000000', fontSize: '0.875rem' }}>
-                            6L Iuliu Maniu Blvd, Floor 4
+                            The Bridge 2, Str. Ghercu Constantin 1A
                           </Typography>
                         </Box>
                       </Stack>

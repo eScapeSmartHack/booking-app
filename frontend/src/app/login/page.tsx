@@ -41,6 +41,11 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(response.user));
         localStorage.setItem('isAuthenticated', 'true');
         
+        // Also store avatar in userAvatarSvg for backward compatibility
+        if (response.user.avatar && response.user.avatar.trim()) {
+          localStorage.setItem('userAvatarSvg', response.user.avatar);
+        }
+        
         // Dispatch event to notify other components (like navbar) that user data was updated
         window.dispatchEvent(new Event('userUpdated'));
         

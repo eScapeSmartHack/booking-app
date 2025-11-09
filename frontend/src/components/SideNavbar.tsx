@@ -77,22 +77,35 @@ export default function SideNavbar({ children }: SideNavbarProps) {
 
   useEffect(() => {
     setMounted(true);
-    // Load saved avatar from localStorage
-    const savedAvatar = localStorage.getItem('userAvatarSvg');
-    if (savedAvatar) {
-      setAvatarSvg(savedAvatar);
-    }
     
-    // Load user type from localStorage
+    // Load user data from localStorage
     const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
         const userTypeValue = user.type || null;
         setUserType(userTypeValue);
+        
+        // Load avatar from user object first (from login/backend)
+        if (user.avatar && user.avatar.trim()) {
+          setAvatarSvg(user.avatar);
+        } else {
+          // Fall back to userAvatarSvg if user object doesn't have avatar
+          const savedAvatar = localStorage.getItem('userAvatarSvg');
+          if (savedAvatar) {
+            setAvatarSvg(savedAvatar);
+          }
+        }
+        
         console.log('Loaded user type from localStorage:', userTypeValue);
       } catch (error) {
         console.error('Failed to parse user data:', error);
+      }
+    } else {
+      // If no user object, try userAvatarSvg as fallback
+      const savedAvatar = localStorage.getItem('userAvatarSvg');
+      if (savedAvatar) {
+        setAvatarSvg(savedAvatar);
       }
     }
     
@@ -105,6 +118,10 @@ export default function SideNavbar({ children }: SideNavbarProps) {
         try {
           const user = JSON.parse(e.newValue);
           setUserType(user.type || null);
+          // Update avatar from user object
+          if (user.avatar && user.avatar.trim()) {
+            setAvatarSvg(user.avatar);
+          }
         } catch (error) {
           console.error('Failed to parse user data:', error);
         }
@@ -114,18 +131,27 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     
     // Also listen for custom event from avatar builder page
     const handleAvatarUpdate = () => {
-      const savedAvatar = localStorage.getItem('userAvatarSvg');
-      if (savedAvatar) {
-        setAvatarSvg(savedAvatar);
-      }
-      // Also update user type in case it changed
+      // Check user object first, then fallback to userAvatarSvg
       const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
           setUserType(user.type || null);
+          if (user.avatar && user.avatar.trim()) {
+            setAvatarSvg(user.avatar);
+          } else {
+            const savedAvatar = localStorage.getItem('userAvatarSvg');
+            if (savedAvatar) {
+              setAvatarSvg(savedAvatar);
+            }
+          }
         } catch (error) {
           console.error('Failed to parse user data:', error);
+        }
+      } else {
+        const savedAvatar = localStorage.getItem('userAvatarSvg');
+        if (savedAvatar) {
+          setAvatarSvg(savedAvatar);
         }
       }
     };
@@ -138,6 +164,16 @@ export default function SideNavbar({ children }: SideNavbarProps) {
         try {
           const user = JSON.parse(userStr);
           setUserType(user.type || null);
+          // Update avatar from user object when user data is updated (e.g., after login)
+          if (user.avatar && user.avatar.trim()) {
+            setAvatarSvg(user.avatar);
+          } else {
+            // Fallback to userAvatarSvg if user object doesn't have avatar
+            const savedAvatar = localStorage.getItem('userAvatarSvg');
+            if (savedAvatar) {
+              setAvatarSvg(savedAvatar);
+            }
+          }
         } catch (error) {
           console.error('Failed to parse user data:', error);
         }
