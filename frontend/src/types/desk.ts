@@ -1,6 +1,7 @@
 export type DeskStatus = 
   | 'available' 
   | 'booked' 
+  | 'selected'
   | 'colleague' 
   | 'team-member' 
   | 'closed' 

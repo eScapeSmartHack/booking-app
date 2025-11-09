@@ -30,6 +30,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import LogoutIcon from '@mui/icons-material/Logout';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import GroupsIcon from '@mui/icons-material/Groups';
+import BarChartIcon from '@mui/icons-material/BarChart';
 
 const DRAWER_WIDTH = 290;
 
@@ -53,7 +55,9 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   const [userSettingsOpen, setUserSettingsOpen] = useState(
     pathname === '/avatar-builder' || pathname === '/home/settings' || pathname === '/home/points'
   );
-  const [managementOpen, setManagementOpen] = useState(false);
+  const [managementOpen, setManagementOpen] = useState(
+    pathname?.includes('/home/management')
+  );
   const [userType, setUserType] = useState<string | null>(null);
 
   const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -162,8 +166,8 @@ export default function SideNavbar({ children }: SideNavbarProps) {
     setUserSettingsOpen(
       pathname === '/avatar-builder' || pathname === '/home/settings' || pathname === '/home/points'
     );
-    // Update management open state based on pathname (add paths as needed)
-    // setManagementOpen(pathname?.includes('/management') || pathname === '/home/management');
+    // Update management open state based on pathname
+    setManagementOpen(pathname?.includes('/home/management'));
     
     // Reload user type when pathname changes (in case user just logged in)
     const userStr = localStorage.getItem('user');
@@ -206,7 +210,8 @@ export default function SideNavbar({ children }: SideNavbarProps) {
   ];
 
   const managementSubmenu: Array<{ id: string; label: string; path: string | null; icon: React.ReactNode }> = [
-    // Add management submenu items here as needed
+    { id: 'Planning Team Day', label: 'Planning Team Day', path: '/home/management/planning', icon: <GroupsIcon /> },
+    { id: 'Office Statistics', label: 'Office Statistics', path: '/home/management/statistics', icon: <BarChartIcon /> },
   ];
 
   const isSubItemSelected = (subItemPath: string) => {

@@ -18,6 +18,11 @@ const MarkerCircle = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'status' && prop !== 'isHovered' && prop !== 'spaceType',
 })<{ status: string; isHovered: boolean; spaceType: string }>(({ theme, status, isHovered, spaceType }) => {
   const getStatusColor = () => {
+    // If selected, show special purple/blue color
+    if (status === 'selected') {
+      return '#9333ea'; // Purple for selected desks
+    }
+
     // If booked, always show red
     if (status === 'booked') {
       return theme.palette.error.main; // Red for booked
@@ -57,8 +62,12 @@ const MarkerCircle = styled(Box, {
   };
 
   return {
-    width: 8,
-    height: 8,
+    width: 12,
+    height: 12,
+    minWidth: 12,
+    minHeight: 12,
+    maxWidth: 12,
+    maxHeight: 12,
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
@@ -66,18 +75,22 @@ const MarkerCircle = styled(Box, {
     backgroundColor: getStatusColor(),
     color: '#fff',
     fontWeight: 600,
-    fontSize: '4px',
-    lineHeight: 0,
+    fontSize: '6px',
+    lineHeight: 1,
     padding: 0,
     margin: 0,
-    boxShadow: theme.shadows[2],
-    border: `0.15px solid rgba(255, 255, 255, 0.4)`,
-    transition: 'all 0.2s ease',
-    transform: (isHovered && status !== 'booked') ? 'scale(1.3)' : 'scale(1)',
+    boxShadow: isHovered 
+      ? `0 0 0 2px ${theme.palette.common.white}, 0 2px 8px rgba(0, 0, 0, 0.3)`
+      : theme.shadows[2],
+    border: isHovered 
+      ? `2px solid ${theme.palette.common.white}`
+      : `1.5px solid rgba(255, 255, 255, 0.5)`,
+    transition: 'box-shadow 0.15s ease, border 0.15s ease',
     cursor: 'pointer',
     textAlign: 'center',
+    position: 'relative',
     '& > *': {
-      lineHeight: 0,
+      lineHeight: 1,
       margin: 0,
       padding: 0,
       display: 'flex',
@@ -163,6 +176,8 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
     switch (desk.status) {
       case 'available':
         return 'dot';
+      case 'selected':
+        return '✓';
       case 'booked':
         return 'dot';
       case 'colleague':
@@ -190,6 +205,11 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
         zIndex: isHovered ? 1000 : (isMeetingRoom ? 5 : 10),
         left: `${desk.position.x}%`,
         top: `${desk.position.y}%`,
+        width: '12px',
+        height: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -202,9 +222,11 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
         {getStatusIcon() === 'dot' ? (
           <Box
             sx={{
-              width: '1.5px',
-              height: '1.5px',
-              borderRadius: '80%',
+              width: '3px',
+              height: '3px',
+              minWidth: '3px',
+              minHeight: '3px',
+              borderRadius: '50%',
               backgroundColor: '#fff',
               margin: 0,
               padding: 0,
@@ -217,14 +239,15 @@ export default function DeskMarker({ desk, onClick, isAdminMode = false, mapScal
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              lineHeight: 0,
+              lineHeight: 1,
               margin: 0,
               padding: 0,
               width: '100%',
               height: '100%',
               textAlign: 'center',
               verticalAlign: 'middle',
-              fontSize: '4px',
+              fontSize: '8px',
+              fontWeight: 700,
             }}
           >
             {getStatusIcon()}
