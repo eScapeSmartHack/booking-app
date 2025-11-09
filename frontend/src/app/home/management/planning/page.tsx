@@ -70,7 +70,12 @@ export default function PlanningTeamDayPage() {
   const [allUsers, setAllUsers] = useState<User[]>([]); // Store all users
   const [userTeams, setUserTeams] = useState<number[]>([]); // Store team IDs the current user belongs to
   const [teamsLoaded, setTeamsLoaded] = useState(false); // Track if teams have been loaded
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    // Auto-select tomorrow or next working day
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  });
   const [startTime, setStartTime] = useState<string>('09:00');
   const [endTime, setEndTime] = useState<string>('18:00');
   const [pendingBookings, setPendingBookings] = useState<PendingBooking[]>([]);
@@ -440,6 +445,13 @@ export default function PlanningTeamDayPage() {
     return today.toISOString().split('T')[0];
   };
 
+  const getMaxDate = () => {
+    const today = new Date();
+    const twoWeeksLater = new Date(today);
+    twoWeeksLater.setDate(today.getDate() + 14);
+    return twoWeeksLater.toISOString().split('T')[0];
+  };
+
   // Modify desks to show selection visually
   const desksWithSelection = desks.map((desk) => {
     if (selectedDesks.includes(desk.id) && desk.status === 'available') {
@@ -482,7 +494,11 @@ export default function PlanningTeamDayPage() {
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              inputProps={{ min: getTodayDate() }}
+              inputProps={{ 
+                min: getTodayDate(),
+                max: getMaxDate()
+              }}
+              helperText="Select a date within the next 2 weeks"
             />
           </Grid>
           <Grid item xs={6} md={4}>
