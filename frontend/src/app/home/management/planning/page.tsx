@@ -71,10 +71,12 @@ export default function PlanningTeamDayPage() {
   const [userTeams, setUserTeams] = useState<number[]>([]); // Store team IDs the current user belongs to
   const [teamsLoaded, setTeamsLoaded] = useState(false); // Track if teams have been loaded
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    // Auto-select tomorrow or next working day
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    // Auto-select current date (using local timezone to avoid UTC issues)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   });
   const [startTime, setStartTime] = useState<string>('09:00');
   const [endTime, setEndTime] = useState<string>('18:00');
@@ -89,6 +91,26 @@ export default function PlanningTeamDayPage() {
   // Bulk booking states
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [selectedDesks, setSelectedDesks] = useState<number[]>([]);
+
+  // Ensure selectedDate is properly formatted on mount (fix any timezone issues)
+  useEffect(() => {
+    if (selectedDate) {
+      // Check if the date format is correct (YYYY-MM-DD)
+      const dateMatch = selectedDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dateMatch) {
+        // Date is already in correct format, but ensure it's using local timezone
+        const date = new Date(selectedDate + 'T12:00:00'); // Use noon to avoid timezone edge cases
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const normalizedDate = `${year}-${month}-${day}`;
+        // Only update if different to avoid unnecessary re-renders
+        if (normalizedDate !== selectedDate) {
+          setSelectedDate(normalizedDate);
+        }
+      }
+    }
+  }, []); // Only run once on mount
 
   // Load user teams first, then users
   useEffect(() => {
@@ -441,15 +463,23 @@ export default function PlanningTeamDayPage() {
   };
 
   const getTodayDate = () => {
+    // Get today's date in local timezone (not UTC)
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const getMaxDate = () => {
+    // Get max date in local timezone (not UTC)
     const today = new Date();
     const twoWeeksLater = new Date(today);
     twoWeeksLater.setDate(today.getDate() + 14);
-    return twoWeeksLater.toISOString().split('T')[0];
+    const year = twoWeeksLater.getFullYear();
+    const month = String(twoWeeksLater.getMonth() + 1).padStart(2, '0');
+    const day = String(twoWeeksLater.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Modify desks to show selection visually
@@ -488,11 +518,15 @@ export default function PlanningTeamDayPage() {
         <Grid container spacing={2}>
           <Grid item xs={12} md={4}>
             <TextField
+              key={`date-${selectedDate}`}
               fullWidth
               label="Date"
               type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              value={selectedDate || ''}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                setSelectedDate(newDate);
+              }}
               InputLabelProps={{ shrink: true }}
               inputProps={{ 
                 min: getTodayDate(),

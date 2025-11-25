@@ -39,7 +39,12 @@ function BookingPageContent() {
         return dateParam;
       }
     }
-    return '2025-11-10';
+    // Default to today's date (using local timezone to avoid UTC issues)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   });
   const [typeFilters, setTypeFilters] = useState<{
     desk: boolean;
@@ -403,7 +408,16 @@ function BookingPageContent() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            inputProps={{ min: new Date().toISOString().split('T')[0] }}
+            inputProps={{ 
+              min: (() => {
+                // Get today's date in local timezone (not UTC)
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+              })()
+            }}
             size="small"
             InputLabelProps={{ shrink: true }}
             InputProps={{
